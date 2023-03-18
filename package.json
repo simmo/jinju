@@ -1,6 +1,6 @@
 {
   "name": "jinju",
-  "version": "0.0.0",
+  "version": "0.0.1-beta.0",
   "description": "Opinionated Node CLI Toolkit",
   "main": "./dist/index.js",
   "type": "module",
