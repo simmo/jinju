@@ -50,4 +50,5 @@ jobs:
 
       - name: Upload
         uses: actions/upload-artifact@v3
-        retention-days: 1
+        with:
+          retention-days: 1
