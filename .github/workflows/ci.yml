@@ -30,6 +30,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        id: setup
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
       - name: Lint
         run: npm run lint
 
@@ -45,10 +55,21 @@ jobs:
     needs: validate
     timeout-minutes: 5
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        id: setup
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
       - name: Build
-        run: npm run builds
+        run: npm run build
 
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
+          name: dist
           retention-days: 1
