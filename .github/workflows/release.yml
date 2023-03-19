@@ -4,10 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       release:
-        description: 'Release type'
-        required: true
         default: prerelease
-        type: choice
+        description: 'Type'
         options:
           - prerelease
           - prepatch
@@ -16,6 +14,8 @@ on:
           - patch
           - minor
           - major
+        required: true
+        type: choice
   push:
     branches: main
 
@@ -41,10 +41,10 @@ jobs:
         with:
           name: dist
 
-      - name: Pre-Release
-        if: inputs.release == 'preminor' || inputs.release == 'prepatch' || inputs.release == 'prerelease' || inputs.release == 'premajor'
+      - name: Beta Release
+        if: contains(fromJSON('["premajor", "preminor", "prepatch", "prerelease"]'), inputs.release)
         run: npm run release -- ${{ inputs.release }} --ci --preRelease=beta --dry-run
 
       - name: Release
-        if: inputs.release == 'patch' || inputs.release == 'minor' || inputs.release == 'major'
+        if: contains(fromJSON('["major", "minor", "patch"]'), inputs.release)
         run: npm run release -- ${{ inputs.release }} --ci --dry-run
