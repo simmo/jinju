@@ -4,10 +4,10 @@
 		"forceConsistentCasingInFileNames": true,
 		"module": "ESNext",
 		"moduleResolution": "node",
-		"strict": true,
-		"target": "ESNext",
 		"outDir": "dist",
-		"rootDir": "src"
+		"rootDir": "src",
+		"strict": true,
+		"target": "ESNext"
 	},
 	"include": ["src/**/*"],
 	"exclude": ["**/*.test.ts"],

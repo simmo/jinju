@@ -1,0 +1,25 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`symbols > returns an object of fallback symbols 1`] = `
+{
+  "Celebrate": "*",
+  "Debug": "•",
+  "Error": "×",
+  "Info": "i",
+  "Question": "?",
+  "Success": "√",
+  "Warning": "‼",
+}
+`;
+
+exports[`symbols > returns an object of standard symbols 1`] = `
+{
+  "Celebrate": "★",
+  "Debug": "•",
+  "Error": "✖",
+  "Info": "ℹ",
+  "Question": "◆",
+  "Success": "✔",
+  "Warning": "⚠",
+}
+`;
