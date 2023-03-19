@@ -1,6 +1,7 @@
-import pico from 'picocolors';
-import { cursorTo } from 'node:readline';
 import { stdout } from 'node:process';
+import { cursorTo } from 'node:readline';
+
+import pico from 'picocolors';
 import { cursor } from 'sisteransi';
 
 class Spinner {
@@ -69,6 +70,7 @@ class Spinner {
 		this.clear();
 
 		stdout.write(cursor.show);
+
 		this.#isSpinning = false;
 	}
 }

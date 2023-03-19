@@ -1,7 +1,10 @@
-import pico from 'picocolors';
 import { stdout } from 'node:process';
-import { spinner } from '../Helpers/spinner.js';
 import { WriteStream } from 'node:tty';
+
+import pico from 'picocolors';
+
+import { spinner } from '../Helpers/spinner.js';
+
 
 interface Options {
 	prefix?: string;
