@@ -1,10 +1,41 @@
 {
-  "root": true,
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier"
-  ],
-  "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"]
+	"root": true,
+	"extends": [
+		"eslint:recommended",
+		"plugin:@typescript-eslint/recommended",
+		"prettier"
+	],
+	"parser": "@typescript-eslint/parser",
+	"plugins": ["@typescript-eslint", "import"],
+	"rules": {
+		"eol-last": ["error", "always"],
+		"newline-after-var": ["error", "always"],
+		"sort-imports": [
+			"error",
+			{
+				"allowSeparatedGroups": true,
+				"ignoreCase": true,
+				"ignoreDeclarationSort": true
+			}
+		],
+		"import/order": [
+			"error",
+			{
+				"groups": [
+					"builtin",
+					"index",
+					"external",
+					"internal",
+					"parent",
+					"sibling"
+				],
+				"pathGroupsExcludedImportTypes": ["builtin"],
+				"newlines-between": "always",
+				"alphabetize": {
+					"order": "asc",
+					"caseInsensitive": true
+				}
+			}
+		]
+	}
 }
