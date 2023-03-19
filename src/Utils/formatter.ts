@@ -5,7 +5,6 @@ import pico from 'picocolors';
 
 import { spinner } from '../Helpers/spinner.js';
 
-
 interface Options {
 	prefix?: string;
 	stream?: WriteStream;
