@@ -1,8 +1,15 @@
-# <img alt="Jinju" src="./.github/assets/logo-dark.svg#gh-dark-mode-only" width="100" /><img alt="Jinju" src="./.github/assets/logo-light.svg#gh-light-mode-only" width="100" />
+<br/>
+
+<div align="center">
+  <img alt="Jinju" src="./.github/assets/logo-dark.svg#gh-dark-mode-only" width="100" /><img alt="Jinju" src="./.github/assets/logo-light.svg#gh-light-mode-only" width="100" />
 
 <small>Opinionated Node CLI Toolkit</small>
 
 ![npm](https://img.shields.io/npm/v/jinju?style=flat-square)
+
+</div>
+
+---
 
 ## API
 
