@@ -4,9 +4,11 @@
   "description": "Opinionated Node CLI Toolkit",
   "type": "module",
   "exports": {
-    "types": "./dist/types/index.d.ts",
-    "import": "./dist/esm/index.js",
-    "require": "./dist/cjs/index.js"
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
   },
   "scripts": {
     "clean": "rm -rf ./dist",
