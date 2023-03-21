@@ -2,10 +2,18 @@
   "name": "jinju",
   "version": "0.0.1-beta.6",
   "description": "Opinionated Node CLI Toolkit",
-  "main": "./dist/index.js",
   "type": "module",
+  "exports": {
+    "types": "./dist/types/index.d.ts",
+    "import": "./dist/esm/index.js",
+    "require": "./dist/cjs/index.js"
+  },
   "scripts": {
-    "build": "rm -rf ./dist && tsc",
+    "clean": "rm -rf ./dist",
+    "build": "npm run clean && npm run build:cjs & npm run build:esm & npm run build:types",
+    "build:cjs": "tsc -m CommonJS -t ES6 --outDir dist/cjs",
+    "build:esm": "tsc -m ESNext -t ESNext --outDir dist/esm",
+    "build:types": "tsc --declaration   --emitDeclarationOnly --outDir dist/types",
     "coverage": "vitest run --coverage",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
