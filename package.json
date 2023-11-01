@@ -1,6 +1,6 @@
 {
   "name": "jinju",
-  "version": "0.0.1-beta.10",
+  "version": "0.0.1-beta.11",
   "description": "Opinionated Node CLI Toolkit",
   "type": "module",
   "exports": {
