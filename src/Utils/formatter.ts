@@ -10,6 +10,9 @@ interface Options {
 	stream?: WriteStream;
 }
 
+export const header = (value: string) =>
+	pico.bold(pico.white(pico.bgBlack(value)));
+
 export const messageHelper =
 	({ prefix, stream = stdout }: Options = {}) =>
 	(message: string, context?: string) => {

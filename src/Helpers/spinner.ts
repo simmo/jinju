@@ -1,5 +1,6 @@
 import { stdout } from 'node:process';
 import { cursorTo } from 'node:readline';
+import { clearInterval, setInterval } from 'node:timers';
 
 import pico from 'picocolors';
 import { cursor } from 'sisteransi';
@@ -12,7 +13,7 @@ class Spinner {
 	#interval = 80;
 	#text?: string;
 	#frameIndex = 0;
-	#tick?: NodeJS.Timer;
+	#tick?: ReturnType<typeof setInterval>;
 
 	get #frame() {
 		const frame = this.#frames.at(this.#frameIndex);

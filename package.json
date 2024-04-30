@@ -20,6 +20,7 @@
     "build:esm": "tsc -m ESNext -t ESNext --outDir dist/esm",
     "build:types": "tsc --declaration   --emitDeclarationOnly --outDir dist/types",
     "coverage": "vitest run --coverage",
+    "dev": "tsx watch ./src/example.ts",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "lint": "eslint . --ext .ts,.js",
@@ -42,6 +43,7 @@
   "homepage": "https://github.com/simmo/jinju#readme",
   "devDependencies": {
     "@types/node": "^20.12.5",
+    "@types/pretty-hrtime": "^1.0.3",
     "@typescript-eslint/eslint-plugin": "^7.6.0",
     "@typescript-eslint/parser": "^7.6.0",
     "eslint": "^8.57.0",
@@ -50,12 +52,18 @@
     "prettier": "^3.2.5",
     "release-it": "^17.1.1",
     "ts-node": "^10.9.2",
+    "tsx": "^4.7.2",
     "typescript": "^5.4.4",
     "vitest": "^1.4.0"
   },
   "dependencies": {
     "is-unicode-supported": "^2.0.0",
+    "log-update": "^6.0.0",
     "picocolors": "^1.0.0",
-    "sisteransi": "^1.0.5"
+    "pretty-hrtime": "^1.0.3",
+    "sisteransi": "^1.0.5",
+    "strip-ansi": "^7.1.0",
+    "table": "^6.8.2",
+    "wrap-ansi": "^9.0.0"
   }
 }

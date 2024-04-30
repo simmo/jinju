@@ -26,6 +26,24 @@ Jump to:
 - [`success`](#success)
 - [`warn`](#warn)
 
+### Task Running
+
+#### task
+
+A task represents a single unit of work. It accepts a `name` and a `callback` function. The `callback` function can be synchronous or asynchronous.
+
+#### series
+
+Branches and runs the provided tasks one by one. If a task fails, the series stops, preventing the next tasks in sequence from starting.
+
+#### parallel
+
+Branches and runs the provided tasks concurrently. If a task fails, the parallel stops, but the other tasks continue to run.
+
+#### race
+
+Branches and runs the provided tasks concurrently. The branch completes when the first task has completed. Other tasks may continue to run, but do not impact the running of the branch.
+
 ### Celebrate
 
 ```ts
