@@ -1,8 +1,8 @@
-import pico from 'picocolors';
+import { green } from 'yoctocolors';
 
 import { Symbols } from '../Constants/symbols.js';
 import { messageHelper } from '../Utils/formatter.js';
 
 export const success = messageHelper({
-	prefix: pico.green(Symbols.Success),
+	prefix: green(Symbols.Success),
 });

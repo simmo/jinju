@@ -1,8 +1,8 @@
 import { stdout } from 'node:process';
 import { cursorTo } from 'node:readline';
 
-import pico from 'picocolors';
 import { cursor } from 'sisteransi';
+import { blue } from 'yoctocolors';
 
 class Spinner {
 	#frames = stdout.isTTY
@@ -17,7 +17,7 @@ class Spinner {
 	get #frame() {
 		const frame = this.#frames.at(this.#frameIndex);
 
-		return `${pico.blue(frame)} ${this.#text}`;
+		return `${blue(frame)} ${this.#text}`;
 	}
 
 	clear() {

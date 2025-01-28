@@ -1,7 +1,7 @@
 import { stdout } from 'node:process';
 import { WriteStream } from 'node:tty';
 
-import pico from 'picocolors';
+import { dim } from 'yoctocolors';
 
 import { spinner } from '../Helpers/spinner.js';
 
@@ -17,7 +17,7 @@ export const messageHelper =
 
 		if (prefix) text.unshift(prefix);
 
-		if (context) text.push(pico.dim(context));
+		if (context) text.push(dim(context));
 
 		spinner.clear();
 
