@@ -11,8 +11,5 @@
 		"target": "ESNext"
 	},
 	"include": ["src/**/*"],
-	"exclude": ["**/*.test.ts"],
-	"ts-node": {
-		"esm": true
-	}
+	"exclude": ["**/*.test.ts"]
 }
