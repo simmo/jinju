@@ -12,10 +12,10 @@ class Spinner {
 	#interval = 80;
 	#text?: string;
 	#frameIndex = 0;
-	#tick?: NodeJS.Timer;
+	#tick?: NodeJS.Timeout;
 
 	get #frame() {
-		const frame = this.#frames.at(this.#frameIndex);
+		const frame = this.#frames[this.#frameIndex];
 
 		return `${blue(frame)} ${this.#text}`;
 	}
