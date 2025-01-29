@@ -34,7 +34,7 @@ celebrate(message: string, context?: string)
 
 Renders a celebration `message`, with optional `context`. If `context` is provided it is rendered dimmer than the `message`.
 
-> 💡
+> [!TIP]
 > Much like [`success`](#success), it can be used as a different type of positive message, like completing the process.
 
 #### Example
@@ -55,7 +55,7 @@ debug(message: string)
 
 Renders a debug `message`.
 
-> 💡
+> [!TIP]
 > Provides additional information without distracting from the core message output.
 
 #### Example
@@ -86,7 +86,7 @@ fail(message: string, context?: string)
 
 Renders a failure `message`, with optional `context`. If `context` is provided it is rendered dimmer than the `message`.
 
-> 💡
+> [!TIP]
 > Can be used to indicate a failure or error.
 
 #### Example
@@ -103,7 +103,7 @@ fail('Could not read file', './config.json');
 
 Returns a spinner instance.
 
-> 💡
+> [!TIP]
 > Showing feedback during asynchronous processes.
 
 #### `spinner.start(message: string)`
@@ -145,7 +145,7 @@ success(message: string, context?: string)
 
 Renders a success `message`, with optional `context`. If `context` is provided it is rendered dimmer than the `message`.
 
-> 💡
+> [!TIP]
 > Can be used to indicate an action has resolved as expected.
 
 #### Example
@@ -166,7 +166,7 @@ warn(message: string, context?: string)
 
 Renders a warning `message`, with optional `context`. If `context` is provided it is rendered dimmer than the `message`.
 
-> 💡
+> [!TIP]
 > Can be used to provide awareness to a non-ideal resolution.
 
 #### Example
@@ -178,3 +178,7 @@ success('Connected to server');
 
 success('Connected to server', 'https://a.server.com');
 ```
+
+---
+
+<small>© 2025 [Mike Simmonds](https://mike.id)</small>
