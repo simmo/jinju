@@ -26,7 +26,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "release": "release-it",
-    "test": "vitest"
+    "test": "vitest",
+    "typecheck": "tsc --noEmit --extendedDiagnostics"
   },
   "repository": "github:simmo/jinju",
   "keywords": [
