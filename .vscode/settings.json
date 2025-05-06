@@ -1,8 +1,10 @@
 {
-	"cSpell.words": ["jinju"],
+	"cSpell.words": ["jinju", "premajor", "preminor", "prepatch", "simmo"],
 	"editor.codeActionsOnSave": {
 		"source.fixAll.eslint": "explicit"
 	},
+	"javascript.preferences.importModuleSpecifierEnding": "js",
 	"typescript.tsdk": "node_modules/typescript/lib",
+	"typescript.preferences.autoImportSpecifierExcludeRegexes": ["node:test"],
 	"typescript.preferences.importModuleSpecifierEnding": "js"
 }
