@@ -1,8 +1,19 @@
 {
-	"cSpell.words": ["jinju"],
+	"cSpell.words": [
+		"jinju",
+		"niobe",
+		"premajor",
+		"preminor",
+		"prepatch",
+		"simmo",
+		"sisteransi",
+		"yoctocolors"
+	],
 	"editor.codeActionsOnSave": {
 		"source.fixAll.eslint": "explicit"
 	},
+	"javascript.preferences.importModuleSpecifierEnding": "js",
 	"typescript.tsdk": "node_modules/typescript/lib",
+	"typescript.preferences.autoImportSpecifierExcludeRegexes": ["node:test"],
 	"typescript.preferences.importModuleSpecifierEnding": "js"
 }

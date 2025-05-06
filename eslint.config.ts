@@ -1,5 +1,6 @@
 import eslint from '@eslint/js';
 import eslintConfigPrettier from 'eslint-config-prettier';
+//@ts-expect-error No types yet, will be in the next release
 import * as importPlugin from 'eslint-plugin-import';
 import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
@@ -45,5 +46,5 @@ export default tseslint.config(
 				},
 			],
 		},
-	}
+	},
 );
