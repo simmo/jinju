@@ -14,8 +14,8 @@
     }
   },
   "scripts": {
-    "clean": "rm -rf ./dist",
-    "build": "npm run clean && npm run build:cjs & npm run build:esm & npm run build:types",
+    "prebuild": "rm -rf ./dist",
+    "build": "npm run build:cjs & npm run build:esm & npm run build:types",
     "build:cjs": "tsc -m CommonJS -t ES6 --outDir dist/cjs",
     "build:esm": "tsc -m ESNext -t ESNext --outDir dist/esm",
     "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist/types",
