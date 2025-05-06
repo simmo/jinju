@@ -1,5 +1,14 @@
 {
-	"cSpell.words": ["jinju", "premajor", "preminor", "prepatch", "simmo"],
+	"cSpell.words": [
+		"jinju",
+		"niobe",
+		"premajor",
+		"preminor",
+		"prepatch",
+		"simmo",
+		"sisteransi",
+		"yoctocolors"
+	],
 	"editor.codeActionsOnSave": {
 		"source.fixAll.eslint": "explicit"
 	},

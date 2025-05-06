@@ -1,6 +1,7 @@
 import { stdout } from 'node:process';
 import { cursorTo } from 'node:readline';
 
+import { milliseconds } from 'niobe';
 import { cursor } from 'sisteransi';
 import { blue } from 'yoctocolors';
 
@@ -9,7 +10,7 @@ class Spinner {
 		? ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 		: ['-'];
 	#isSpinning = false;
-	#interval = 80;
+	#interval = milliseconds(80);
 	#text?: string;
 	#frameIndex = 0;
 	#tick?: NodeJS.Timeout;
