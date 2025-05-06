@@ -46,6 +46,7 @@
   "homepage": "https://github.com/simmo/jinju#readme",
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@release-it/keep-a-changelog": "^7.0.0",
     "@tsconfig/node-lts": "^22.0.1",
     "@types/node": "^22.12.0",
     "eslint": "^9.19.0",
@@ -55,7 +56,7 @@
     "globals": "^15.14.0",
     "jiti": "^2.4.2",
     "prettier": "^3.4.2",
-    "release-it": "^18.1.2",
+    "release-it": "^19.0.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.22.0",
@@ -83,5 +84,17 @@
         }
       }
     ]
+  },
+  "release-it": {
+    "github": {
+      "release": true
+    },
+    "plugins": {
+      "@release-it/keep-a-changelog": {
+        "addUnreleased": true,
+        "addVersionUrl": true,
+        "filename": "CHANGELOG.md"
+      }
+    }
   }
 }

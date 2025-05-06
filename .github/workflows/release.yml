@@ -1,0 +1,63 @@
+name: Release
+
+concurrency:
+  group: release
+
+on:
+  workflow_call:
+    inputs:
+      release:
+        default: prerelease
+        description: 'Release Type'
+        required: true
+        type: string
+      dry-run:
+        default: false
+        description: 'Dry Run'
+        type: boolean
+    secrets:
+      NPM_TOKEN:
+        required: true
+  workflow_dispatch:
+    inputs:
+      release:
+        default: prerelease
+        description: 'Type'
+        options:
+          - prerelease
+          - prepatch
+          - preminor
+          - premajor
+          - patch
+          - minor
+          - major
+        required: true
+        type: choice
+      dry-run:
+        default: false
+        description: 'Dry Run'
+        type: boolean
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          npm-token: ${{ secrets.NPM_TOKEN }}
+
+      - name: Build
+        run: npm run build
+
+      - name: Release
+        continue-on-error: ${{ inputs.release == 'prerelease' }}
+        run: npm run release -- ${{ inputs.release }} --ci ${{ contains(fromJSON('["premajor", "preminor", "prepatch", "prerelease"]'), inputs.release) && '--preRelease=beta --plugins.@release-it/keep-a-changelog.keepUnreleased' || '' }} --dry-run=${{ inputs.dry-run }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
