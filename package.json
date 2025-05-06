@@ -2,6 +2,9 @@
   "name": "jinju",
   "version": "0.0.1-beta.12",
   "description": "Opinionated Node CLI Toolkit",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
@@ -10,9 +13,6 @@
       "require": "./dist/cjs/index.js"
     }
   },
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/esm/index.js",
-  "types": "./dist/types/index.d.ts",
   "scripts": {
     "clean": "rm -rf ./dist",
     "build": "npm run clean && npm run build:cjs & npm run build:esm & npm run build:types",
@@ -32,7 +32,9 @@
   "keywords": [
     "node",
     "cli",
-    "toolkit"
+    "command-line",
+    "toolkit",
+    "dx"
   ],
   "files": [
     "dist"
@@ -62,5 +64,23 @@
     "is-unicode-supported": "^2.1.0",
     "sisteransi": "^1.0.5",
     "yoctocolors": "^2.1.1"
+  },
+  "prettier": {
+    "arrowParens": "avoid",
+    "singleQuote": true,
+    "useTabs": true,
+    "overrides": [
+      {
+        "files": [
+          "*.yml",
+          "package.json",
+          "package-lock.json"
+        ],
+        "options": {
+          "tabWidth": 2,
+          "useTabs": false
+        }
+      }
+    ]
   }
 }
