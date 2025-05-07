@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Coverage check
+- CI summary support
+
 ## [0.0.1] - 2025-05-06
 
 ### Added
@@ -15,7 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New APIs; `celebrate`, `debug`, `fail`, `log`, `spinner`, `success`, `warn`
 - Ability to set a configuration
 
-[unreleased]: https://github.com/simmo/jinju/compare/0.0.1...HEAD
 [@simmo]: https://github.com/simmo
-
+[unreleased]: https://github.com/simmo/jinju/compare/0.0.1...HEAD
 [0.0.1]: https://github.com/simmo/jinju/compare/0.0.1-beta.16...0.0.1
