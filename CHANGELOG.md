@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Setup `fallow`
+- Coverage check
+- CI summary support
+- Flag support for `boolean`, `custom`, `number`, `string`, and `url`
 
 ### Changed
 

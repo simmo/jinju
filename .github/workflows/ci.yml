@@ -5,6 +5,9 @@ on:
   push:
     branches: main
 
+env:
+  BRANCH: ${{ github.head_ref || github.ref_name }}
+
 jobs:
   test:
     name: Test
@@ -18,7 +21,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Test
-        run: npm test
+        run: npm run test:coverage
 
       - name: Typecheck
         run: npm run typecheck
@@ -27,8 +30,7 @@ jobs:
     name: Generate
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      BRANCH: ${{ github.head_ref || github.ref_name }}
+    if: github.event_name == 'push'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
