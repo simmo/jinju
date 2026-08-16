@@ -1,8 +1,8 @@
-export { celebrate } from './Helpers/celebrate.js';
-export { config } from './Helpers/config.js';
-export { debug } from './Helpers/debug.js';
-export { fail } from './Helpers/fail.js';
-export { log } from './Helpers/log.js';
-export { spinner } from './Helpers/spinner.js';
-export { success } from './Helpers/success.js';
-export { warn } from './Helpers/warn.js';
+import { boolean } from './boolean.js';
+import { custom } from './custom.js';
+import { number } from './number.js';
+import { string } from './string.js';
+import { url } from './url.js';
+
+export const flag = { boolean, custom, number, string, url };
+export type { InferTypeOfFlag } from './InferTypeOfFlag.js';

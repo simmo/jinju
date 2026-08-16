@@ -5,6 +5,9 @@ on:
   push:
     branches: main
 
+env:
+  BRANCH: ${{ github.head_ref || github.ref_name }}
+
 jobs:
   test:
     name: Test
@@ -18,10 +21,45 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Test
-        run: npm test
+        run: npm run test:coverage
 
       - name: Typecheck
         run: npm run typecheck
+
+  generate:
+    name: Generate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Generate Fallow Badge
+        run: npm run gen:fallow-badge
+
+      - name: Check for Changes
+        id: check_changes
+        run: |
+          if [[ -n "$(git diff --exit-code)" ]]; then
+            echo "Changes detected."
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "No changes detected."
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git add -A
+          git commit -m "chore: update generated files [skip ci]"
+          git push origin HEAD:${{ env.BRANCH }} --no-verify
 
   code-style:
     name: Code Style
@@ -35,7 +73,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Format
-        run: npm run format
+        run: npm run format:check
 
       - name: Lint
         run: npm run lint
