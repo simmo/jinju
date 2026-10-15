@@ -1,0 +1,84 @@
+import { describe, expect, test } from 'vitest';
+
+import { flag } from './flag';
+import { toParam } from './param';
+
+const d = { description: 'd' };
+const parse = (value: unknown, input: string) => toParam(value).resolve([input], '--x');
+
+describe('value flags', () => {
+	test.each([
+		['string', flag.string(d)],
+		['number', flag.number(d)],
+		['url', flag.url(d)],
+		['email', flag.email(d)],
+		['directory', flag.directory(d)],
+		['file', flag.file(d)],
+	])('%s takes a value and starts optional', (name, created) => {
+		const param = toParam(created);
+		expect(param.kind).toBe('flag');
+		expect(param.value.name).toBe(name);
+		expect(param.state).toEqual({ required: false, multiple: false, hasDefault: false });
+	});
+
+	test('keeps options for help and lookup', () => {
+		const options = { description: 'Mode', alias: 'm', hidden: true, choices: ['a', 'b'] };
+		expect(toParam(flag.string(options)).options).toBe(options);
+	});
+
+	test('passes creator options to the parser', async () => {
+		expect(await parse(flag.number({ ...d, max: 5 }), '6')).toMatchObject({ ok: false });
+		expect(await parse(flag.string({ ...d, choices: ['a'] }), 'b')).toMatchObject({ ok: false });
+		expect(await parse(flag.url(d), 'https://a.b')).toEqual({
+			ok: true,
+			value: new URL('https://a.b'),
+		});
+	});
+});
+
+describe('switches', () => {
+	test('boolean defaults to false', () => {
+		const param = toParam(flag.boolean(d));
+		expect(param.kind).toBe('switch');
+		expect(param.resolveSwitch([])).toBe(false);
+	});
+
+	test('count defaults to 0', () => {
+		const param = toParam(flag.count(d));
+		expect(param.kind).toBe('switch');
+		expect(param.resolveSwitch([])).toBe(0);
+	});
+
+	test('reject values', async () => {
+		expect(await parse(flag.boolean(d), 'x')).toMatchObject({
+			ok: false,
+			errors: [{ reason: 'switches do not take a value' }],
+		});
+	});
+});
+
+describe('custom', () => {
+	test('creates value flags from a parser and display name', async () => {
+		const date = flag.custom((input: string, options: { year?: number }) => {
+			const value = new Date(input);
+			if (options.year !== undefined && value.getUTCFullYear() !== options.year) {
+				throw new Error(`must be in ${options.year}`);
+			}
+			return value;
+		}, 'date');
+		const param = toParam(date({ ...d, year: 2026 }));
+		expect(param.value.name).toBe('date');
+		expect(await param.resolve(['2026-01-01'], '--x')).toEqual({
+			ok: true,
+			value: new Date('2026-01-01'),
+		});
+		expect(await param.resolve(['2025-01-01'], '--x')).toMatchObject({
+			ok: false,
+			errors: [{ reason: 'must be in 2026' }],
+		});
+	});
+
+	test('defaults the display name to value', () => {
+		expect(toParam(flag.custom((input) => input)(d)).value.name).toBe('value');
+	});
+});
