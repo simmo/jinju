@@ -7,7 +7,17 @@ import {
 	type Toggle,
 	type VALUE,
 } from './param';
-import { type NumberOptions, type Parse, parsers, type StringOptions } from './value';
+import {
+	type NumberOptions,
+	type Parse,
+	parseDirectory,
+	parseEmail,
+	parseFile,
+	parseNumber,
+	parseString,
+	parseUrl,
+	type StringOptions,
+} from './value';
 
 export interface FlagOptions {
 	/** Shown in help. */
@@ -86,13 +96,13 @@ export const flag = {
 	),
 	custom,
 	/** Path to a directory, resolved to an absolute path. */
-	directory: custom(parsers.directory, 'directory'),
-	email: custom(parsers.email, 'email'),
+	directory: custom(parseDirectory, 'directory'),
+	email: custom(parseEmail, 'email'),
 	/** Path to a file, resolved to an absolute path. */
-	file: custom(parsers.file, 'file'),
-	number: custom<number, NumberOptions>(parsers.number, 'number'),
-	string: custom(parsers.string, 'string') as <const C extends string = string>(
+	file: custom(parseFile, 'file'),
+	number: custom<number, NumberOptions>(parseNumber, 'number'),
+	string: custom(parseString, 'string') as <const C extends string = string>(
 		options: FlagOptions & StringOptions<C>,
 	) => Flag<NoInfer<C> | undefined, NoInfer<C>>,
-	url: custom(parsers.url, 'url'),
+	url: custom(parseUrl, 'url'),
 };
