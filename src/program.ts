@@ -10,7 +10,8 @@ import { type FlagLookup, type FlagSpec, isFlag, readFlag, tokenize } from './to
 
 /**
  * Commands keyed by name. Nest objects for subcommands; `$` is the command for that level.
- * Keys starting with `:` are reserved for dynamic segments.
+ * A `:name` key is a dynamic segment: it captures one word into the commands' arg named
+ * `name`, e.g. `{ ':project': { deploy } }` routes `app my-site deploy`.
  */
 export interface CommandTree {
 	readonly [key: string]: AnyCommand | CommandTree;
@@ -36,6 +37,10 @@ interface Node {
 	command?: Command;
 	description: string;
 	children: Map<string, Node>;
+	/** The `:name` child, matched by any word that isn't a static child. */
+	dynamic?: Node;
+	/** Names of the dynamic segments from the root to here, in order. */
+	segments: string[];
 	entries: HelpEntry[];
 	/** Flags accepted before the next command name: built-ins plus any inherited below. */
 	lookup: FlagLookup;
@@ -43,10 +48,15 @@ interface Node {
 	shared: FlagRecord;
 }
 
-/** Where routing ended. Will also carry captured dynamic segment values. */
+/** Where routing ended. */
 interface Match {
 	node: Node;
+	/** Argv after the command path. */
 	rest: string[];
+	/** Values captured by dynamic segments, in order. */
+	captured: string[];
+	/** The command path as typed, e.g. `['my-site', 'deploy']`. */
+	words: string[];
 }
 
 const RESERVED = ['help', 'version'];
@@ -75,10 +85,26 @@ const unionLookup = (flags: Iterable<readonly [string, Param]>): FlagLookup => {
 	};
 };
 
+const childNodes = (node: Node): Node[] => [
+	...node.children.values(),
+	...(node.dynamic ? [node.dynamic] : []),
+];
+
+const createNode = (path: string[], segments: string[], command?: Command): Node => ({
+	path,
+	command,
+	description: command?.description ?? '',
+	children: new Map(),
+	segments,
+	entries: [],
+	lookup: unionLookup([]),
+	shared: {},
+});
+
 const commandsBelow = (node: Node, seen = new Set<Node>()): Command[] => {
 	if (seen.has(node)) return [];
 	seen.add(node);
-	const below = [...node.children.values()].flatMap((child) => commandsBelow(child, seen));
+	const below = childNodes(node).flatMap((child) => commandsBelow(child, seen));
 	return node.command ? [node.command, ...below] : below;
 };
 
@@ -123,7 +149,7 @@ export class Program {
 	help(path: readonly string[] = []): string {
 		let node = this.#root;
 		for (const name of path) {
-			const child = node.children.get(name);
+			const child = node.children.get(name) ?? node.dynamic;
 			if (!child) throw new UnknownCommandError(name);
 			node = child;
 		}
@@ -131,7 +157,8 @@ export class Program {
 	}
 
 	async #execute(argv: readonly string[]): Promise<number> {
-		const { node, rest } = this.#route(argv);
+		const match = this.#route(argv);
+		const { captured, node, rest } = match;
 		const index = indexFlags({ ...this.#builtins, ...node.command?.flags });
 		const tokens = tokenize(rest, {
 			long: (name) => index.long(name) ?? node.lookup.long(name),
@@ -149,30 +176,36 @@ export class Program {
 			const unknown = tokens.flatMap((token) =>
 				token.type === 'unknown' ? [new UnknownFlagError(token.raw)] : [],
 			);
-			if (unknown.length > 0) return this.#fail(unknown, node);
+			if (unknown.length > 0) return this.#fail(unknown, match);
 			const stray = tokens.find((token) => token.type === 'arg');
-			if (stray) return this.#fail([new UnknownCommandError(stray.value)], node);
+			if (stray) return this.#fail([new UnknownCommandError(stray.value)], match);
 			return this.#print(this.#help(node), argv.length === 0 ? 0 : 1);
 		}
 
 		const result = await node.command.parse(rest, {
 			globals: this.#builtins,
+			leading: captured,
 			strict: this.#config.strict,
 		});
-		if (!result.ok) return this.#fail(result.errors, node);
+		if (!result.ok) return this.#fail(result.errors, match);
 
 		try {
 			const code = await node.command.execute(result.value);
 			return typeof code === 'number' ? code : 0;
 		} catch (error) {
-			if (error instanceof JinjuError) return this.#fail([error], node);
+			if (error instanceof JinjuError) return this.#fail([error], match);
 			throw error;
 		}
 	}
 
-	/** Consumes leading command names (skipping shared flags) to find the deepest command. */
+	/**
+	 * Consumes the command path (skipping shared flags) to find the deepest command. Static
+	 * names win; otherwise a dynamic segment captures the word.
+	 */
 	#route(argv: readonly string[]): Match {
 		const rest: string[] = [];
+		const captured: string[] = [];
+		const words: string[] = [];
 		let node = this.#root;
 		let routing = true;
 
@@ -192,19 +225,25 @@ export class Program {
 				i += used - 1;
 			} else {
 				const child = node.children.get(arg);
-				if (child) node = child;
-				else {
+				if (child) {
+					node = child;
+					words.push(arg);
+				} else if (node.dynamic) {
+					node = node.dynamic;
+					captured.push(arg);
+					words.push(arg);
+				} else {
 					routing = false;
 					rest.push(arg);
 				}
 			}
 		}
 
-		return { node, rest };
+		return { captured, node, rest, words };
 	}
 
 	#build(tree: CommandTree, path: string[]): Node {
-		const node = this.#buildTree(tree, path);
+		const node = this.#buildTree(tree, path, []);
 		this.#index(node);
 		return node;
 	}
@@ -213,7 +252,7 @@ export class Program {
 	#index(node: Node, seen = new Set<Node>()): void {
 		if (seen.has(node)) return;
 		seen.add(node);
-		for (const child of node.children.values()) this.#index(child, seen);
+		for (const child of childNodes(node)) this.#index(child, seen);
 		const commands = commandsBelow(node);
 		const inherited = commands.flatMap((command) =>
 			[...command.inherited].map((key) => [key, toParam(command.flags[key])] as const),
@@ -225,45 +264,23 @@ export class Program {
 		node.shared = sharedFlags(commands);
 	}
 
-	#buildTree(tree: CommandTree, path: string[]): Node {
+	#buildTree(tree: CommandTree, path: string[], segments: string[]): Node {
 		const root = tree.$;
 		if (root !== undefined && !(root instanceof Command)) {
 			throw new ConfigError(`'$' must be a command (at '${path.join(' ') || 'root'}')`);
 		}
-		const node: Node = {
-			path,
-			command: root,
-			description: root?.description ?? '',
-			children: new Map(),
-			entries: [],
-			lookup: unionLookup([]),
-			shared: {},
-		};
-		if (root) this.#validate(root, path);
+		const node = createNode(path, segments, root);
+		if (root) this.#validate(root, path, segments);
 
 		for (const [key, value] of Object.entries(tree)) {
 			if (key === '$') continue;
 			if (key.startsWith(':')) {
-				throw new ConfigError(`'${key}': keys starting with ':' are reserved for dynamic segments`);
+				this.#addDynamic(node, key, value);
+				continue;
 			}
 			const command = value instanceof Command ? value : (value.$ as AnyCommand | undefined);
 			const name = command?.config.name ?? kebabCase(key);
-			const childPath = [...path, name];
-			let child: Node;
-			if (value instanceof Command) {
-				this.#validate(value, childPath);
-				child = {
-					path: childPath,
-					command: value,
-					description: value.description,
-					children: new Map(),
-					entries: [],
-					lookup: unionLookup([]),
-					shared: {},
-				};
-			} else {
-				child = this.#buildTree(value, childPath);
-			}
+			const child = this.#child(value, [...path, name], segments);
 
 			for (const alias of [name, ...(command?.config.aliases ?? [])]) {
 				if (node.children.has(alias)) {
@@ -274,17 +291,60 @@ export class Program {
 			if (!command?.config.hidden) node.entries.push({ name, description: child.description });
 		}
 
+		if (node.dynamic && root && root.params.length > segments.length) {
+			throw new ConfigError(
+				`'${path.join(' ') || 'root'}' has a dynamic segment, so its '$' command can't take positional args`,
+			);
+		}
+
 		return node;
 	}
 
-	/** Ensures a command's flags don't clash with the built-in flags. */
-	#validate(command: Command, path: readonly string[]): void {
+	#child(value: AnyCommand | CommandTree, path: string[], segments: string[]): Node {
+		if (!(value instanceof Command)) return this.#buildTree(value, path, segments);
+		this.#validate(value, path, segments);
+		return createNode(path, segments, value);
+	}
+
+	#addDynamic(node: Node, key: string, value: AnyCommand | CommandTree): void {
+		const name = key.slice(1);
+		const at = node.path.join(' ') || 'root';
+		if (!/^[^\s]+$/.test(name)) throw new ConfigError(`Invalid dynamic segment '${key}'`);
+		if (node.dynamic) {
+			throw new ConfigError(`'${at}' can only have one dynamic segment`);
+		}
+
+		const segments = [...node.segments, name];
+		const child = this.#child(value, [...node.path, `<${name}>`], segments);
+		const bound = commandsBelow(child)[0]?.params[segments.length - 1];
+		node.dynamic = child;
+		node.entries.push({ name: `<${name}>`, description: bound?.options.description ?? '' });
+	}
+
+	/**
+	 * Ensures a command's flags don't clash with the built-ins, and that it starts with an
+	 * arg for each dynamic segment above it, in order.
+	 */
+	#validate(command: Command, path: readonly string[], segments: readonly string[]): void {
+		const at = path.join(' ');
 		for (const key of RESERVED) {
 			if (key in command.flags) {
-				throw new ConfigError(`Command '${path.join(' ')}' uses reserved flag '${key}'`);
+				throw new ConfigError(`Command '${at}' uses reserved flag '${key}'`);
 			}
 		}
 		indexFlags({ ...this.#builtins, ...command.flags });
+
+		segments.forEach((name, index) => {
+			const param = command.params[index];
+			if (param?.options.name !== name) {
+				throw new ConfigError(
+					`Command '${at}' must have an arg named '${name}' at position ${index + 1} for segment ':${name}'`,
+				);
+			}
+			if (param.state.multiple) {
+				throw new ConfigError(`Command '${at}': segment ':${name}' can't be a .multiple() arg`);
+			}
+		});
 	}
 
 	#help(node: Node): string {
@@ -292,6 +352,7 @@ export class Program {
 			command: node.command,
 			description: node.description,
 			globals: { ...node.shared, ...this.#builtins },
+			segments: node.segments.length,
 			subcommands: node.entries,
 			usage: [this.name, ...node.path].join(' '),
 		});
@@ -302,8 +363,8 @@ export class Program {
 		return code;
 	}
 
-	#fail(errors: readonly JinjuError[], node: Node): number {
-		const usage = [this.name, ...node.path].join(' ');
+	#fail(errors: readonly JinjuError[], { words }: Match): number {
+		const usage = [this.name, ...words].join(' ');
 		const lines = errors.map((error) => `error: ${error.message}`);
 		(this.#config.stderr ?? ((value) => process.stderr.write(value)))(
 			`${lines.join('\n')}\n\nRun '${usage} --help' for usage.\n`,

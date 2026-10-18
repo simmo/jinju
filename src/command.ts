@@ -144,6 +144,8 @@ export interface ParseOptions {
 	globals?: FlagRecord;
 	/** Reject unknown flags. Defaults to `true`. */
 	strict?: boolean;
+	/** Positional values captured before the command name (dynamic segments), placed first. */
+	leading?: readonly string[];
 }
 
 export interface Parsed {
@@ -197,7 +199,7 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 		const errors: JinjuError[] = [];
 		const flagInputs = new Map<string, string[]>();
 		const occurrences = new Map<string, boolean[]>();
-		const positionals: string[] = [];
+		const positionals: string[] = [...(options.leading ?? [])];
 
 		for (const token of tokenize(argv, index)) {
 			if (token.type === 'arg') {

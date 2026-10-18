@@ -16,6 +16,8 @@ export interface HelpContext {
 	subcommands: readonly HelpEntry[];
 	/** Shared and built-in flags at this level; listed alongside the command's own. */
 	globals: FlagRecord;
+	/** Leading args already shown in `usage` as dynamic segments (e.g. `<project>`). */
+	segments?: number;
 }
 
 const formatValue = (value: unknown): string =>
@@ -65,6 +67,7 @@ export const renderHelp = ({
 	command,
 	description,
 	globals,
+	segments = 0,
 	subcommands,
 	usage,
 }: HelpContext): string => {
@@ -78,7 +81,7 @@ export const renderHelp = ({
 	if (command) {
 		const parts = [usage];
 		if (flags.length > 0) parts.push('[flags]');
-		parts.push(...params.map(usageArg));
+		parts.push(...params.slice(segments).map(usageArg));
 		lines.push(parts.join(' '));
 	}
 	if (subcommands.length > 0) lines.push(`${usage} <command>`);

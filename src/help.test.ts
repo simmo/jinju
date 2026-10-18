@@ -26,6 +26,17 @@ describe('usage', () => {
 		expect(help({ command: cmd })).toContain('Usage:\n  app <src>... [<dest>] <number>\n');
 	});
 
+	test('leaves out args bound to dynamic segments', () => {
+		const cmd = command({
+			description: 'x',
+			args: [arg.string({ ...d, name: 'project' }).required(), arg.string({ ...d, name: 'env' })],
+			run: () => {},
+		});
+		const output = help({ command: cmd, segments: 1, usage: 'app <project> deploy' });
+		expect(output).toContain('Usage:\n  app <project> deploy [<env>]\n');
+		expect(output).toContain('Arguments:\n  <project>  d (required)\n  <env>      d\n');
+	});
+
 	test('includes [flags] only when there are visible or built-in flags', () => {
 		const bare = command({ description: 'x', run: () => {} });
 		expect(help({ command: bare })).toContain('Usage:\n  app\n');

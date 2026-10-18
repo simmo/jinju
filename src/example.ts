@@ -45,9 +45,22 @@ const copy = app.command({
 	},
 });
 
+// A dynamic segment: `example my-site deploy staging` captures `my-site` into <project>.
+const project = app.scope({
+	args: [arg.string({ name: 'project', description: 'Project to work on' }).required()],
+});
+
+const deploy = project.command({
+	description: 'Deploy a project',
+	args: [arg.string({ name: 'env', description: 'Environment', choices: ['staging', 'prod'] })],
+	run: ({ args: [name, env], flags }) => {
+		console.log('deploy', { name, env, ...flags });
+	},
+});
+
 await jinju({
 	name: 'example',
 	version: '0.0.1',
 	description: 'jinju example program',
-	commands: { sync: { $: sync, repeat: repeatSync }, copy },
+	commands: { sync: { $: sync, repeat: repeatSync }, copy, ':project': { deploy } },
 }).run();

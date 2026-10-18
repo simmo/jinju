@@ -94,6 +94,12 @@ describe('parse', () => {
 		expect(result.ok || result.errors[0]!.message).toBe('Missing required argument <src>');
 	});
 
+	test('leading values come before parsed positionals', async () => {
+		const result = await sync.parse(['3'], { leading: ['captured'] });
+		expect(result.ok && result.value.args).toEqual(['captured', 3]);
+		expect(result.ok && result.value.argv).toEqual(['3']);
+	});
+
 	test('non-strict ignores unknown flags', async () => {
 		const result = await sync.parse(['a', '--what'], { strict: false });
 		expect(result.ok).toBe(true);

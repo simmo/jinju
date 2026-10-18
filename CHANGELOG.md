@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Positional allocation supporting one `.multiple()` arg in any position (e.g. `cp`-style `[...sources, dest]`)
 - `command()` with typed `run` context, optional `name`, `aliases`, `hidden` and exit codes returned from `run`
 - `scope()` for flags and args shared by groups of commands; scopes nest, and shared flags are accepted before the command name
+- Dynamic segments: a `:name` key in the command tree reads a value before the command name into the commands' arg called `name` (e.g. `app my-site deploy`), with static names taking priority and setup checked by `jinju()`
 - `jinju()` program with nested command trees (`$` for a level's own command), built-in `--help`/`-h` and `--version`, help generation, `strict` mode and injectable `stdout`, `stderr` and `exit`
 - Tokenizer support for `--x=v`, `--x v`, `-xv`, bundled shorts (`-abc`), negative numbers as values and `--`
 - Error classes extending `JinjuError`; errors are collected and reported together

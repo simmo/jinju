@@ -98,11 +98,39 @@ const deploy = project.command({
 - **Args** go first: `run` receives `[...scopeArgs, ...commandArgs]`, read after the command name. The one-`.multiple()` rule applies across the whole tuple.
 - **Before the command name**, any flag inherited by a command further down the tree is accepted (`app -v deploy …`). If the command that matches doesn't declare it, that's an "Unknown flag" error. A flag name that takes a value in one scope but not in another must come after the command name.
 
+### Dynamic segments
+
+A `:name` key in the command tree reads a value before the command name. The value goes into the commands' arg called `name`, which comes from a scope:
+
+```ts
+const project = scope({
+	args: [arg.string({ name: 'project', description: 'Project' }).required()],
+});
+
+const deploy = project.command({
+	description: 'Deploy',
+	args: [arg.string({ name: 'env', description: 'Environment' })],
+	run: ({ args: [project, env] }) => {}, // [string, string | undefined]
+});
+
+jinju({ commands: { list, ':project': { deploy } } });
+// app my-site deploy staging
+```
+
+- Segment values are ordinary args: they're parsed and validated by the arg, and appear first in `args`. Nested segments (`{ ':project': { ':env': { logs } } }`) fill the leading args in order.
+- Static names win over a segment: `app list` runs `list`, not a project named `list`.
+- `jinju()` checks the setup and throws a `ConfigError` if:
+  - a command under a segment doesn't have the matching named arg at the right position;
+  - the segment's arg is `.multiple()`;
+  - a level has more than one segment;
+  - a level's `$` command takes its own positional args alongside a segment.
+- Help shows segments in the path (`app <project> deploy [<env>]`). Error hints use the values that were actually typed (`Run 'app my-site deploy --help'`).
+
 ### Program
 
 `jinju({name?, version?, description?, commands, strict?, stdout?, stderr?, exit?})`
 
-- Nest objects for subcommands. `$` is the command for that level. Keys starting with `:` are reserved for dynamic segments, a planned feature.
+- Nest objects for subcommands. `$` is the command for that level. A `:name` key is a dynamic segment (see below).
 - Routing takes the longest matching command path. A flag not inherited by any command below that point, or `--`, ends the path.
 - Help lists every flag a command accepts (its own, inherited and built-in) in one table, sorted by name.
 - `--help`/`-h` and `--version` are built in.

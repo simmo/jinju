@@ -293,17 +293,157 @@ describe('configuration errors', () => {
 		expect(() => jinju({ commands: { x } })).toThrow(ConfigError);
 	});
 
-	test('dynamic segment keys are reserved', () => {
-		const x = command({ description: 'x', run: () => {} });
-		expect(() => jinju({ commands: { ':project': { x } } })).toThrow(
-			'reserved for dynamic segments',
-		);
-	});
-
 	test('duplicate command names', () => {
 		const x = command({ description: 'x', run: () => {} });
 		expect(() => jinju({ commands: { fooBar: x, 'foo-bar': x } })).toThrow(
 			"Duplicate command name 'foo-bar'",
 		);
+	});
+});
+
+describe('dynamic segments', () => {
+	const calls: unknown[] = [];
+	const project = scope({
+		args: [arg.string({ name: 'project', description: 'Project name' }).required()],
+	});
+	const env = project.scope({
+		args: [arg.string({ name: 'env', description: 'Environment' }).required()],
+	});
+	const record = (name: string) => (context: { args: unknown[] }) =>
+		void calls.push({ name, args: context.args });
+	const { output, program } = setup({
+		commands: {
+			list: command({ description: 'List projects', run: record('list') }),
+			':project': {
+				$: project.command({ description: 'Show a project', run: record('show') }),
+				deploy: project.command({
+					description: 'Deploy',
+					args: [arg.string({ name: 'target', description: 'Target' })],
+					run: record('deploy'),
+				}),
+				':env': { logs: env.command({ description: 'Logs', run: record('logs') }) },
+			},
+		},
+	});
+
+	test.each([
+		[['list'], { name: 'list', args: [] }],
+		[['site'], { name: 'show', args: ['site'] }],
+		[['site', 'deploy'], { name: 'deploy', args: ['site', undefined] }],
+		[['site', 'deploy', 'eu'], { name: 'deploy', args: ['site', 'eu'] }],
+		[['site', 'prod', 'logs'], { name: 'logs', args: ['site', 'prod'] }],
+	])('%j', async (argv, expected) => {
+		calls.length = 0;
+		expect(await program.run(argv)).toBe(0);
+		expect(calls).toEqual([expected]);
+	});
+
+	test('-- ends the command path, so segments are not captured after it', async () => {
+		output.stderr = '';
+		expect(await program.run(['--', 'site'])).toBe(1);
+		expect(output.stderr).toContain("error: Unknown command 'site'");
+	});
+
+	test('unknown commands below a segment', async () => {
+		output.stderr = '';
+		expect(await program.run(['site', 'prod', 'nope'])).toBe(1);
+		expect(output.stderr).toBe(
+			"error: Unknown command 'nope'\n\nRun 'app site prod --help' for usage.\n",
+		);
+	});
+
+	test('segment values are parsed and validated by their arg', async () => {
+		const seen: unknown[] = [];
+		const item = scope({ args: [arg.number({ name: 'id', description: 'Item id' }).required()] });
+		const { output: out, program: items } = setup({
+			commands: {
+				':id': {
+					show: item.command({ description: 'x', run: ({ args }) => void seen.push(args) }),
+				},
+			},
+		});
+		expect(await items.run(['42', 'show'])).toBe(0);
+		expect(seen).toEqual([[42]]);
+		expect(await items.run(['abc', 'show'])).toBe(1);
+		expect(out.stderr).toBe(
+			"error: Invalid value 'abc' for argument <id>: must be a number\n\nRun 'app abc show --help' for usage.\n",
+		);
+	});
+
+	test('help shows segments in the path', () => {
+		expect(program.help()).toContain(
+			'Commands:\n  list       List projects\n  <project>  Project name\n',
+		);
+		expect(program.help(['<project>', 'deploy'])).toContain(
+			'Usage:\n  app <project> deploy [flags] [<target>]\n',
+		);
+		expect(program.help(['site', 'prod', 'logs'])).toContain(
+			'Usage:\n  app <project> <env> logs [flags]\n',
+		);
+	});
+
+	test('help for a segment level', async () => {
+		output.stdout = '';
+		expect(await program.run(['site', '--help'])).toBe(0);
+		expect(output.stdout).toContain('Usage:\n  app <project> [flags]\n  app <project> <command>\n');
+		expect(output.stdout).toContain('Commands:\n  deploy  Deploy\n  <env>   Environment\n');
+	});
+
+	describe('configuration errors', () => {
+		const noop = () => {};
+		const named = (name: string) => arg.string({ name, description: 'd' });
+
+		test('commands must start with the segment arg', () => {
+			const x = command({ description: 'x', run: noop });
+			expect(() => jinju({ commands: { ':project': { x } } })).toThrow(
+				"Command '<project> x' must have an arg named 'project' at position 1 for segment ':project'",
+			);
+			const wrongOrder = command({
+				description: 'x',
+				args: [named('env'), named('project')],
+				run: noop,
+			});
+			expect(() => jinju({ commands: { ':project': { x: wrongOrder } } })).toThrow(ConfigError);
+		});
+
+		test('segments cannot be multiple args', () => {
+			const x = command({ description: 'x', args: [named('files').multiple()], run: noop });
+			expect(() => jinju({ commands: { ':files': { x } } })).toThrow("can't be a .multiple() arg");
+		});
+
+		test('one dynamic segment per level', () => {
+			const x = command({ description: 'x', args: [named('a')], run: noop });
+			expect(() => jinju({ commands: { ':a': { x }, ':b': { x } } })).toThrow(
+				"'root' can only have one dynamic segment",
+			);
+		});
+
+		test("a level's $ command can't take positional args next to a segment", () => {
+			const root = command({ description: 'x', args: [named('file')], run: noop });
+			const x = command({ description: 'x', args: [named('a')], run: noop });
+			expect(() => jinju({ commands: { $: root, ':a': { x } } })).toThrow(
+				"'root' has a dynamic segment, so its '$' command can't take positional args",
+			);
+		});
+
+		test('invalid segment names', () => {
+			const x = command({ description: 'x', run: noop });
+			expect(() => jinju({ commands: { ':': { x } } })).toThrow("Invalid dynamic segment ':'");
+		});
+
+		test('a command can be a segment directly', async () => {
+			const seen: unknown[] = [];
+			const { program: direct } = setup({
+				commands: {
+					':name': command({
+						description: 'x',
+						args: [named('name')],
+						run: ({ args }) => void seen.push(args),
+					}),
+				},
+			});
+			expect(await direct.run(['ada'])).toBe(0);
+			expect(seen).toEqual([['ada']]);
+		});
 	});
 });
