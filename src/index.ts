@@ -1,13 +1,16 @@
 export { type AnyArg, type Arg, type ArgList, type ArgOptions, arg } from './arg';
 export {
+	type AnyCommand,
 	Command,
 	type CommandConfig,
 	command,
 	type Parsed,
+	type ParseOptions,
 	type RunContext,
 	type RunResult,
 	type Scope,
 	type ScopeConfig,
+	type ScopeDefinition,
 	scope,
 } from './command';
 export {
@@ -29,7 +32,25 @@ export {
 	flag,
 	type Switch,
 } from './flag';
-export type { InferArgs, InferArgType, InferFlags, InferFlagType } from './infer';
-export type { ParamState, Result } from './param';
+export type {
+	CheckArgs,
+	InferArgs,
+	InferArgType,
+	InferFlags,
+	InferFlagType,
+	MergeFlags,
+} from './infer';
+export type {
+	DefaultValue,
+	Defined,
+	IsMultiple,
+	Param,
+	ParamInit,
+	ParamKind,
+	ParamOptions,
+	ParamState,
+	Result,
+	Toggle,
+} from './param';
 export { type CommandTree, jinju, Program, type ProgramConfig } from './program';
-export type { NumberOptions, Parse, PathOptions, StringOptions } from './value';
+export type { NumberOptions, Parse, PathOptions, StringOptions, ValueType } from './value';

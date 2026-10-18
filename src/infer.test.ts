@@ -1,4 +1,4 @@
-import { describe, expectTypeOf, test } from 'vitest';
+import { describe, expect, expectTypeOf, test } from 'vitest';
 
 import { arg } from './arg';
 import { flag } from './flag';
@@ -83,9 +83,9 @@ describe('InferFlagType', () => {
 		const count = flag.count(d);
 		expectTypeOf<InferFlagType<typeof count>>().toEqualTypeOf<number>();
 		// @ts-expect-error switches cannot be multiple
-		verbose.multiple();
+		expect(() => verbose.multiple()).toThrow(TypeError);
 		// @ts-expect-error switches cannot be required
-		verbose.required();
+		expect(() => verbose.required()).toThrow(TypeError);
 	});
 
 	test('custom', () => {

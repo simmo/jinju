@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { flag } from './flag';
+import { Flag, flag, Switch } from './flag';
 import { toParam } from './param';
 
 const d = { description: 'd' };
@@ -15,6 +15,13 @@ describe('value flags', () => {
 		['directory', flag.directory(d)],
 		['file', flag.file(d)],
 	])('%s takes a value and starts optional', (name, created) => {
+		expect(created).toBeInstanceOf(Flag);
+		expect(
+			created
+				.required()
+				.multiple()
+				.default(['x'] as never),
+		).toBeInstanceOf(Flag);
 		const param = toParam(created);
 		expect(param.kind).toBe('flag');
 		expect(param.value.name).toBe(name);
@@ -37,16 +44,29 @@ describe('value flags', () => {
 });
 
 describe('switches', () => {
-	test('boolean defaults to false', () => {
-		const param = toParam(flag.boolean(d));
-		expect(param.kind).toBe('switch');
-		expect(param.resolveSwitch([])).toBe(false);
+	test('boolean uses the last occurrence, defaulting to false', () => {
+		const verbose = flag.boolean(d);
+		expect(verbose.kind).toBe('switch');
+		expect(verbose.resolveSwitch([])).toBe(false);
+		expect(verbose.resolveSwitch([true])).toBe(true);
+		expect(verbose.resolveSwitch([true, false])).toBe(false);
 	});
 
-	test('count defaults to 0', () => {
-		const param = toParam(flag.count(d));
-		expect(param.kind).toBe('switch');
-		expect(param.resolveSwitch([])).toBe(0);
+	test('count counts, negation resets, defaulting to 0', () => {
+		const level = flag.count(d);
+		expect(level.resolveSwitch([])).toBe(0);
+		expect(level.resolveSwitch([true, true, true])).toBe(3);
+		expect(level.resolveSwitch([true, false, true])).toBe(1);
+	});
+
+	test('default returns a new switch that still toggles', () => {
+		const base = flag.boolean(d);
+		const color = base.default(true);
+		expect(color).not.toBe(base);
+		expect(color).toBeInstanceOf(Switch);
+		expect(color.resolveSwitch([])).toBe(true);
+		expect(color.resolveSwitch([false])).toBe(false);
+		expect(base.resolveSwitch([])).toBe(false);
 	});
 
 	test('reject values', async () => {

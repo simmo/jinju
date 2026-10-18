@@ -1,11 +1,10 @@
 import {
 	type Defined,
 	type DefaultValue,
-	type ELEMENT,
 	type IsMultiple,
 	Param,
+	type ParamInit,
 	type Toggle,
-	type VALUE,
 } from './param';
 import {
 	type NumberOptions,
@@ -28,36 +27,53 @@ export interface FlagOptions {
 	hidden?: boolean;
 }
 
-/**
- * A flag that takes a value: `--name value`, `--name=value`, `-n value`.
- *
- * `T` is the resolved type (e.g. `string[] | undefined`); `V` is what one input parses to.
- * Modifier return types are written out inline so editors show resolved types.
- */
-export interface Flag<T, V extends Defined> {
-	readonly kind: 'flag';
-	readonly options: FlagOptions;
-	readonly [VALUE]: T;
-	readonly [ELEMENT]: V;
+/** A flag that takes a value: `--name value`, `--name=value`, `-n value`. */
+export class Flag<T, V extends Defined> extends Param<T, V> {
+	readonly kind = 'flag';
+	declare readonly options: FlagOptions;
+
 	/** Must be provided. Clears any default. */
 	required<R extends boolean = true>(
-		required?: R,
-	): Flag<(IsMultiple<T, V> extends true ? V[] : V) | (R extends true ? never : undefined), V>;
-	/** Accept the flag repeatedly, collecting values into an array. Converts any default. */
+		required: R = true as R,
+	): Flag<(IsMultiple<T, V> extends true ? V[] : V) | (R extends true ? never : undefined), V> {
+		// Same runtime class; only the type parameters change.
+		return this.setRequired(required) as never;
+	}
+
+	/** Accept repeated values, collected into an array. Converts any default. */
 	multiple<M extends boolean = true>(
-		allow?: M,
-	): Flag<(M extends true ? V[] : V) | (undefined extends T ? undefined : never), V>;
-	/** Value used when the flag is absent. Clears `required`. */
-	default(value: DefaultValue<T, V>): Flag<IsMultiple<T, V> extends true ? V[] : V, V>;
+		allow: M = true as M,
+	): Flag<(M extends true ? V[] : V) | (undefined extends T ? undefined : never), V> {
+		return this.setMultiple(allow) as never;
+	}
+
+	/** Value used when absent. Clears `required`. */
+	default(value: DefaultValue<T, V>): Flag<IsMultiple<T, V> extends true ? V[] : V, V> {
+		return this.setDefault(value) as never;
+	}
 }
 
 /** A value-less flag (`--verbose`, `--no-verbose`, `-vvv`), always resolving to a value. */
-export interface Switch<T> {
-	readonly kind: 'switch';
-	readonly options: FlagOptions;
-	readonly [VALUE]: T;
-	readonly [ELEMENT]: T;
-	default(value: T): Switch<T>;
+export class Switch<T> extends Param<T, T> {
+	readonly kind = 'switch';
+	declare readonly options: FlagOptions;
+	protected readonly toggle: Toggle<T>;
+
+	constructor(init: ParamInit<T> & { toggle: Toggle<T> }) {
+		super(init);
+		this.toggle = init.toggle;
+	}
+
+	/** Value used when the switch is absent. */
+	default(value: T): Switch<T> {
+		return this.setDefault(value);
+	}
+
+	/** Resolves from occurrences: `--x` → `true`, `--no-x` → `false`. */
+	resolveSwitch(occurrences: readonly boolean[]): T {
+		if (occurrences.length === 0) return this.defaultValue as T;
+		return this.toggle(occurrences);
+	}
 }
 
 // oxlint-disable-next-line no-explicit-any
@@ -71,7 +87,7 @@ const custom =
 	(options: FlagOptions & O): Flag<V | undefined, V> => {
 		const value = { name: valueName, parse: (input: string) => parse(input, options) };
 		const state = { required: false, multiple: false, hasDefault: false };
-		return new Param('flag', value, options, state) as unknown as Flag<V | undefined, V>;
+		return new Flag<V | undefined, V>({ value, options, state });
 	};
 
 const toggle = <V>(valueName: string, initial: V, reduce: Toggle<V>) => {
@@ -83,7 +99,7 @@ const toggle = <V>(valueName: string, initial: V, reduce: Toggle<V>) => {
 			},
 		};
 		const state = { required: false, multiple: false, hasDefault: true };
-		return new Param('switch', value, options, state, initial, reduce) as unknown as Switch<V>;
+		return new Switch<V>({ value, options, state, defaultValue: initial, toggle: reduce });
 	};
 };
 

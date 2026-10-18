@@ -48,6 +48,7 @@ test('email', () => {
 describe('paths', async () => {
 	const dir = await mkdtemp(join(tmpdir(), 'jinju-'));
 	const file = join(dir, 'file.txt');
+
 	await writeFile(file, '');
 
 	test('resolves to absolute', async () => {
@@ -62,6 +63,7 @@ describe('paths', async () => {
 	test('checks existence and kind', async () => {
 		expect(await parseDirectory(dir, { exists: true })).toBe(dir);
 		expect(await parseFile(file, { exists: true })).toBe(file);
+
 		await expect(parseDirectory(file, { exists: true })).rejects.toThrow('must be a directory');
 		await expect(parseFile(dir, { exists: true })).rejects.toThrow('must be a file');
 		await expect(parseFile(join(dir, 'missing'), { exists: true })).rejects.toThrow(

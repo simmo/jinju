@@ -8,8 +8,8 @@ import {
 	UnexpectedArgError,
 	UnknownFlagError,
 } from './errors';
-import type { FlagRecord } from './flag';
-import type { CheckArgs, InferArgs, InferFlags, Simplify } from './infer';
+import { type FlagRecord, Switch } from './flag';
+import type { CheckArgs, InferArgs, InferFlags, MergeFlags } from './infer';
 import { type Param, type Result, toParam } from './param';
 import { type FlagLookup, type FlagSpec, tokenize } from './tokenize';
 
@@ -152,6 +152,9 @@ export interface Parsed {
 	argv: readonly string[];
 }
 
+// oxlint-disable-next-line no-explicit-any
+export type AnyCommand = Command<any, any>;
+
 /** A runnable command: flags + args + handler. Name-less; mounted by `jinju()`. */
 export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgList> {
 	/** Own and inherited flags. */
@@ -224,7 +227,7 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 		const flags: Record<string, unknown> = {};
 		const flagResults = Object.keys(this.flags).map(async (key) => {
 			const { label, param } = index.entries.get(key)!;
-			if (param.kind === 'switch') {
+			if (param instanceof Switch) {
 				flags[key] = param.resolveSwitch(occurrences.get(key) ?? []);
 				return;
 			}
@@ -256,8 +259,6 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 const parseToggle = (value: string): boolean | undefined =>
 	value === 'true' ? true : value === 'false' ? false : undefined;
 
-type Merge<A, B> = Simplify<Omit<A, keyof B> & B>;
-
 export interface ScopeConfig<F extends FlagRecord, A extends ArgList, Prefix extends ArgList = []> {
 	/** Flags every command in the scope declares. Accepted before the command name. */
 	flags?: F;
@@ -271,12 +272,12 @@ export interface Scope<P extends FlagRecord = {}, PA extends ArgList = []> {
 	readonly args: PA;
 	/** Creates a command that inherits this scope's flags and args. */
 	command<const A extends ArgList = [], F extends FlagRecord = {}>(
-		config: CommandConfig<F, A, RunContext<Merge<P, F>, [...PA, ...A]>, PA>,
-	): Command<Merge<P, F>, [...PA, ...A]>;
+		config: CommandConfig<F, A, RunContext<MergeFlags<P, F>, [...PA, ...A]>, PA>,
+	): Command<MergeFlags<P, F>, [...PA, ...A]>;
 	/** Creates a nested scope adding more flags and args. */
 	scope<const A extends ArgList = [], F extends FlagRecord = {}>(
 		config: ScopeConfig<F, A, PA>,
-	): Scope<Merge<P, F>, [...PA, ...A]>;
+	): Scope<MergeFlags<P, F>, [...PA, ...A]>;
 }
 
 const createScope = (definition: ScopeDefinition): Scope => ({

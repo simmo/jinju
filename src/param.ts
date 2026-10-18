@@ -46,36 +46,33 @@ export interface ParamOptions {
 /** Reduces switch occurrences (`--x` → true, `--no-x` → false) to a value. */
 export type Toggle<V> = (occurrences: readonly boolean[]) => V;
 
+export interface ParamInit<V> {
+	value: ValueType<V>;
+	options: ParamOptions;
+	state: ParamState;
+	defaultValue?: unknown;
+}
+
 /**
- * Runtime implementation behind the public `Flag`, `Switch` and `Arg` interfaces. Immutable:
- * every modifier returns a new instance.
+ * Base for every flag, switch and arg: immutable state, parsing and resolution. Subclasses
+ * expose the modifiers that apply to them, with their own return types, via the protected
+ * `set*` helpers. `T` is the
+ * resolved type (e.g. `string[] | undefined`); `V` is what one input parses to.
  */
-export class Param<V = unknown> {
-	constructor(
-		readonly kind: ParamKind,
-		readonly value: ValueType<V>,
-		readonly options: ParamOptions,
-		readonly state: ParamState,
-		readonly defaultValue?: unknown,
-		readonly toggle?: Toggle<V>,
-	) {}
+export abstract class Param<T = unknown, V = unknown> {
+	declare readonly [VALUE]: T;
+	declare readonly [ELEMENT]: V;
+	abstract readonly kind: ParamKind;
+	readonly value: ValueType<V>;
+	readonly options: ParamOptions;
+	readonly state: ParamState;
+	readonly defaultValue: unknown;
 
-	required(required = true): Param<V> {
-		return this.#with({ ...this.state, required, hasDefault: false }, undefined);
-	}
-
-	multiple(allow = true): Param<V> {
-		const { hasDefault } = this.state;
-		let defaultValue = this.defaultValue;
-		if (hasDefault && allow !== this.state.multiple) {
-			defaultValue = allow ? [defaultValue] : (defaultValue as unknown[])[0];
-		}
-		return this.#with({ ...this.state, multiple: allow }, defaultValue);
-	}
-
-	default(value: unknown): Param<V> {
-		const frozen = Array.isArray(value) ? Object.freeze([...value]) : value;
-		return this.#with({ ...this.state, required: false, hasDefault: true }, frozen);
+	constructor({ defaultValue, options, state, value }: ParamInit<V>) {
+		this.value = value;
+		this.options = options;
+		this.state = state;
+		this.defaultValue = defaultValue;
 	}
 
 	/** Parses raw input strings into the param's final value, applying modifiers. */
@@ -111,18 +108,34 @@ export class Param<V = unknown> {
 		return { ok: true, value: multiple ? values : values[0] };
 	}
 
-	/** Resolves a switch (boolean/count flag) from its occurrences. */
-	resolveSwitch(occurrences: readonly boolean[]): unknown {
-		if (occurrences.length === 0 && this.state.hasDefault) return this.defaultValue;
-		return this.toggle!(occurrences);
+	/** Must be provided. Clears any default. */
+	protected setRequired(required: boolean): this {
+		return this.with({ ...this.state, required, hasDefault: false }, undefined);
 	}
 
-	#with(state: ParamState, defaultValue: unknown): Param<V> {
-		return new Param(this.kind, this.value, this.options, state, defaultValue, this.toggle);
+	/** Collects values into an array, converting an existing default between `v` and `[v]`. */
+	protected setMultiple(allow: boolean): this {
+		let defaultValue = this.defaultValue;
+		if (this.state.hasDefault && allow !== this.state.multiple) {
+			defaultValue = allow ? [defaultValue] : (defaultValue as unknown[])[0];
+		}
+		return this.with({ ...this.state, multiple: allow }, defaultValue);
+	}
+
+	/** Uses `value` when absent. Clears `required`. */
+	protected setDefault(value: unknown): this {
+		return this.with({ ...this.state, required: false, hasDefault: true }, value);
+	}
+
+	/** A copy (same class) with new state. Array defaults are frozen copies. */
+	private with(state: ParamState, defaultValue: unknown): this {
+		const frozen = Array.isArray(defaultValue) ? Object.freeze([...defaultValue]) : defaultValue;
+		const copy = Object.create(Object.getPrototypeOf(this)) as this;
+		return Object.assign(copy, this, { state, defaultValue: frozen });
 	}
 }
 
-/** Narrows a public param interface to its runtime implementation. */
+/** Narrows an unknown value to a param, e.g. when validating user-supplied definitions. */
 export const toParam = (param: unknown): Param => {
 	if (!(param instanceof Param)) throw new TypeError('Expected a flag or arg');
 	return param;

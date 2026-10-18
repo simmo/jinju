@@ -75,20 +75,3 @@ describe('resolve', () => {
 		expect(await resolve(arg.number(d).required(), ['3'])).toEqual({ ok: true, value: 3 });
 	});
 });
-
-describe('switches', () => {
-	test('boolean uses the last occurrence', () => {
-		const param = toParam(flag.boolean(d));
-		expect(param.resolveSwitch([])).toBe(false);
-		expect(param.resolveSwitch([true])).toBe(true);
-		expect(param.resolveSwitch([true, false])).toBe(false);
-		expect(toParam(flag.boolean(d).default(true)).resolveSwitch([])).toBe(true);
-	});
-
-	test('count counts, negation resets', () => {
-		const param = toParam(flag.count(d));
-		expect(param.resolveSwitch([])).toBe(0);
-		expect(param.resolveSwitch([true, true, true])).toBe(3);
-		expect(param.resolveSwitch([true, false, true])).toBe(1);
-	});
-});

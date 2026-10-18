@@ -1,11 +1,4 @@
-import {
-	type Defined,
-	type DefaultValue,
-	type ELEMENT,
-	type IsMultiple,
-	Param,
-	type VALUE,
-} from './param';
+import { type Defined, type DefaultValue, type IsMultiple, Param } from './param';
 import {
 	type NumberOptions,
 	type Parse,
@@ -25,26 +18,30 @@ export interface ArgOptions {
 	name?: string;
 }
 
-/**
- * A positional argument. Optional by default.
- *
- * `T` is the resolved type (e.g. `string[] | undefined`); `V` is what one input parses to.
- */
-export interface Arg<T, V extends Defined> {
-	readonly kind: 'arg';
-	readonly options: ArgOptions;
-	readonly [VALUE]: T;
-	readonly [ELEMENT]: V;
+/** A positional argument. Optional by default. */
+export class Arg<T, V extends Defined> extends Param<T, V> {
+	readonly kind = 'arg';
+	declare readonly options: ArgOptions;
+
 	/** Must be provided. Clears any default. */
 	required<R extends boolean = true>(
-		required?: R,
-	): Arg<(IsMultiple<T, V> extends true ? V[] : V) | (R extends true ? never : undefined), V>;
-	/** Collect a run of positionals into an array. Only one arg per command may be multiple. */
+		required: R = true as R,
+	): Arg<(IsMultiple<T, V> extends true ? V[] : V) | (R extends true ? never : undefined), V> {
+		// Same runtime class; only the type parameters change.
+		return this.setRequired(required) as never;
+	}
+
+	/** Accept repeated values, collected into an array. Converts any default. */
 	multiple<M extends boolean = true>(
-		allow?: M,
-	): Arg<(M extends true ? V[] : V) | (undefined extends T ? undefined : never), V>;
-	/** Value used when the arg is absent. Clears `required`. */
-	default(value: DefaultValue<T, V>): Arg<IsMultiple<T, V> extends true ? V[] : V, V>;
+		allow: M = true as M,
+	): Arg<(M extends true ? V[] : V) | (undefined extends T ? undefined : never), V> {
+		return this.setMultiple(allow) as never;
+	}
+
+	/** Value used when absent. Clears `required`. */
+	default(value: DefaultValue<T, V>): Arg<IsMultiple<T, V> extends true ? V[] : V, V> {
+		return this.setDefault(value) as never;
+	}
 }
 
 // oxlint-disable-next-line no-explicit-any
@@ -58,7 +55,7 @@ const custom =
 	(options: ArgOptions & O): Arg<V | undefined, V> => {
 		const value = { name: valueName, parse: (input: string) => parse(input, options) };
 		const state = { required: false, multiple: false, hasDefault: false };
-		return new Param('arg', value, options, state) as unknown as Arg<V | undefined, V>;
+		return new Arg<V | undefined, V>({ value, options, state });
 	};
 
 export const arg = {

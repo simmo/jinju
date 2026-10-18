@@ -3,12 +3,16 @@ import { describe, expect, expectTypeOf, test } from 'vitest';
 import * as jinju from './index';
 import type {
 	AnyArg,
+	AnyCommand,
 	AnyFlag,
 	Arg,
 	ArgList,
 	ArgOptions,
+	CheckArgs,
 	CommandConfig,
 	CommandTree,
+	DefaultValue,
+	Defined,
 	Flag,
 	FlagOptions,
 	FlagRecord,
@@ -16,10 +20,17 @@ import type {
 	InferArgType,
 	InferFlags,
 	InferFlagType,
+	IsMultiple,
+	MergeFlags,
 	NumberOptions,
 	Parse,
 	Parsed,
+	Param,
+	ParamInit,
+	ParamKind,
+	ParamOptions,
 	ParamState,
+	ParseOptions,
 	PathOptions,
 	ProgramConfig,
 	Result,
@@ -27,8 +38,11 @@ import type {
 	RunResult,
 	Scope,
 	ScopeConfig,
+	ScopeDefinition,
 	StringOptions,
 	Switch,
+	Toggle,
+	ValueType,
 } from './index';
 
 describe('runtime exports', () => {
@@ -154,5 +168,28 @@ describe('type exports', () => {
 		>();
 		expectTypeOf<CommandTree>().toBeObject();
 		expectTypeOf<ProgramConfig>().toHaveProperty('commands');
+		expectTypeOf<jinju.Command>().toExtend<AnyCommand>();
+		expectTypeOf<ParseOptions>().toHaveProperty('strict');
+		expectTypeOf<ScopeDefinition>().toHaveProperty('args');
+		expectTypeOf<MergeFlags<{ a: 1; b: 2 }, { b: 3 }>>().toEqualTypeOf<{ a: 1; b: 3 }>();
+		expectTypeOf<CheckArgs<[Arg<string[], string>]>>().toBeUnknown();
+		expectTypeOf<CheckArgs<[Arg<string[], string>, Arg<string[], string>]>>().toHaveProperty(
+			'~error',
+		);
+	});
+
+	test('param base types', () => {
+		expectTypeOf<Flag<string | undefined, string>>().toExtend<Param<string | undefined, string>>();
+		expectTypeOf<Arg<string, string>>().toExtend<Param<string, string>>();
+		expectTypeOf<Switch<boolean>>().toExtend<Param<boolean, boolean>>();
+		expectTypeOf<IsMultiple<string[] | undefined, string>>().toEqualTypeOf<true>();
+		expectTypeOf<IsMultiple<string[], string[]>>().toEqualTypeOf<false>();
+		expectTypeOf<DefaultValue<string[], string>>().toEqualTypeOf<readonly [string, ...string[]]>();
+		expectTypeOf<undefined>().not.toExtend<Defined>();
+		expectTypeOf<ParamInit<number>>().toHaveProperty('value');
+		expectTypeOf<ValueType<number>['parse']>().returns.toEqualTypeOf<number | Promise<number>>();
+		expectTypeOf<Toggle<number>>().returns.toBeNumber();
+		expectTypeOf<ParamKind>().toEqualTypeOf<'arg' | 'flag' | 'switch'>();
+		expectTypeOf<ParamOptions>().toHaveProperty('choices');
 	});
 });

@@ -1,15 +1,12 @@
 import { basename, extname } from 'node:path';
 
 import { kebabCase } from './case';
-import { Command, indexFlags } from './command';
+import { type AnyCommand, Command, indexFlags } from './command';
 import { ConfigError, JinjuError, UnknownCommandError, UnknownFlagError } from './errors';
 import { flag, type FlagRecord } from './flag';
 import { type HelpEntry, renderHelp } from './help';
 import { type Param, toParam } from './param';
 import { type FlagLookup, type FlagSpec, isFlag, readFlag, tokenize } from './tokenize';
-
-// oxlint-disable-next-line no-explicit-any
-type AnyCommand = Command<any, any>;
 
 /**
  * Commands keyed by name. Nest objects for subcommands; `$` is the command for that level.

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { arg } from './arg';
+import { Arg, arg } from './arg';
 import { toParam } from './param';
 
 const d = { description: 'd' };
@@ -35,7 +35,8 @@ describe('modifiers', () => {
 	test('return args', () => {
 		const base = arg.number(d);
 		for (const modified of [base.required(), base.multiple(), base.default(1)]) {
-			expect(toParam(modified).kind).toBe('arg');
+			expect(modified).toBeInstanceOf(Arg);
+			expect(modified).not.toBe(base);
 		}
 	});
 
