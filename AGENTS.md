@@ -18,10 +18,11 @@ Every change that affects users, the public API, the build or tooling must updat
 
 - `npm test` runs vitest, which runs every `*.test.ts` both as runtime tests and as type tests
 - `npm run typecheck`, `npm run lint`, `npm run format` (`format:check` in CI)
+- `npm run dead-code` runs `fallow dead-code` (unused code, private type leaks, circular dependencies; type-aware via `.fallowrc.jsonc`)
 - `npm run build` produces `dist/index.js` and `dist/index.d.ts` (ESM-only)
 - `npx tsx src/example.ts <args>` runs the example CLI
 
-Before reporting work as done, run tests, typecheck, lint and format.
+Before reporting work as done, run tests, typecheck, lint, format and dead-code.
 
 ## Conventions
 

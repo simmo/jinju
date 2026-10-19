@@ -78,6 +78,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Dead Code
+        run: npm run dead-code
+
   prerelease:
     name: Prerelease
     needs: [test, code-style]

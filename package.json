@@ -28,6 +28,7 @@
 	},
 	"scripts": {
 		"build": "tsdown",
+		"dead-code": "fallow dead-code",
 		"dev": "tsx --watch ./src/example.ts",
 		"format:check": "oxfmt --check",
 		"format": "oxfmt",
