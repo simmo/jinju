@@ -43,7 +43,7 @@
 	"devDependencies": {
 		"@release-it/keep-a-changelog": "^7.0.0",
 		"@tsconfig/node-lts": "^24.0.1",
-		"@types/node": "^24.13.3",
+		"@types/node": "^26.6.5",
 		"@vitest/coverage-v8": "^4.1.10",
 		"fallow": "^3.34.1",
 		"oxfmt": "^0.74.0",
