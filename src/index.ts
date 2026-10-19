@@ -13,6 +13,7 @@ export {
 	type ScopeDefinition,
 	scope,
 } from './command';
+export { type ErrorData, ErrorTemplate, type ErrorTemplateOptions } from './error-template';
 export {
 	ConfigError,
 	DuplicateFlagError,
@@ -52,5 +53,18 @@ export type {
 	Result,
 	Toggle,
 } from './param';
+export {
+	formatPath,
+	type HelpArg,
+	type HelpCommand,
+	type HelpData,
+	type HelpFlag,
+	type HelpParam,
+	type HelpPathPart,
+	type HelpProgram,
+	type HelpRow,
+	HelpTemplate,
+	type HelpTemplateOptions,
+} from './help';
 export { type CommandTree, jinju, Program, type ProgramConfig } from './program';
 export type { NumberOptions, Parse, PathOptions, StringOptions, ValueType } from './value';

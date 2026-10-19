@@ -128,7 +128,7 @@ jinju({ commands: { list, ':project': { deploy } } });
 
 ### Program
 
-`jinju({name?, version?, description?, commands, strict?, stdout?, stderr?, exit?})`
+`jinju({name?, version?, description?, commands, strict?, help?, error?, stdout?, stderr?, exit?})`
 
 - Nest objects for subcommands. `$` is the command for that level. A `:name` key is a dynamic segment (see below).
 - Routing takes the longest matching command path. A flag not inherited by any command below that point, or `--`, ends the path.
@@ -136,6 +136,78 @@ jinju({ commands: { list, ':project': { deploy } } });
 - `--help`/`-h` and `--version` are built in.
 - Errors are collected and printed with a usage hint. Exit code `1`.
 - `run()` resolves to the exit code and sets `process.exitCode`. Override this with `exit`.
+
+### Help
+
+`--help` pages are rendered by a `HelpTemplate`. Pass an instance as `help` to customise them, either with options or by extending the class and overriding any method:
+
+```ts
+import { type HelpData, type HelpFlag, HelpTemplate } from 'jinju';
+
+class MyHelp extends HelpTemplate {
+	override formatFlag(flag: HelpFlag) {
+		const [label, description] = super.formatFlag(flag);
+		return [label, flag.source === 'builtin' ? `${description} (built-in)` : description] as const;
+	}
+
+	override sections(data: HelpData) {
+		return [`${data.program.name} v${data.program.version}`, ...super.sections(data)];
+	}
+}
+
+jinju({ version: '1.0.0', help: new MyHelp({ sortFlags: false }), commands });
+```
+
+| Method                                                       | Default                                                                                                              |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `render(data)`                                               | Joins `sections(data)` with blank lines and adds a trailing newline. Override it to replace the layout entirely      |
+| `sections(data)`                                             | `[description, usage, commands, args, flags]`, with empty sections left out                                          |
+| `formatUsage`, `formatCommands`, `formatArgs`, `formatFlags` | Each renders one section from `data`                                                                                 |
+| `commands(data)`, `flags(data)`                              | Choose what to list: hidden entries are left out unless `showHidden`, and flags are sorted unless `sortFlags: false` |
+| `formatCommand`, `formatArg`, `formatFlag`                   | One `[left, right]` table row each                                                                                   |
+| `formatTags`, `formatValue`, `formatPath`                    | ` (required; default: 3)`, default values, `<project> deploy`                                                        |
+| `formatTable(rows)`, `formatSection(title, lines)`           | Layout primitives                                                                                                    |
+
+`HelpData` holds the building blocks of a page; the template decides what to use and how. It makes no layout decisions: nothing is filtered or sorted.
+
+| Field                                | Contents                                                                                                                                                                                           |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `program`                            | `name`, `version`, `description`                                                                                                                                                                   |
+| `path`                               | The command path as `{ name, dynamic }` parts. `formatPath(path)` gives `<project> deploy`                                                                                                         |
+| `description`, `aliases`, `runnable` | This level's description, its command's aliases, and whether it has a command to run                                                                                                               |
+| `usage`                              | Usage lines, e.g. `app <project> deploy [flags] [<env>]`                                                                                                                                           |
+| `commands`                           | Each subcommand: `name`, `label`, `description`, `aliases`, `hidden`, `dynamic`, full `path`, `runnable`, `group` (has subcommands)                                                                |
+| `args`                               | Each arg in order: `name`, `label` (`<env>`), `usage` (`[<env>]`), `source` (`command` or `scope`), `segment`                                                                                      |
+| `flags`                              | Each flag in definition order, hidden ones included: `key`, `name`, `alias`, `kind` (`flag` or `switch`), `source` (`command`, `scope` or `builtin`), `hidden`, `label` (`-n, --dry-run <string>`) |
+
+Args and flags also carry `description`, `type`, `required`, `multiple`, `hasDefault`, the raw `default`, `choices`, and `options`. `options` is everything passed to the creator, including `min`, `max`, `integer`, `exists` and the options of custom parsers. The text is printed as-is, so include a trailing newline.
+
+### Errors
+
+Error output (printed to stderr, with exit code `1`) is rendered by an `ErrorTemplate`, customised the same way as help: pass an instance as `error`, with options or a subclass.
+
+```ts
+import { ErrorTemplate, type JinjuError, MissingRequiredError } from 'jinju';
+
+class MyErrors extends ErrorTemplate {
+	override formatError(error: JinjuError) {
+		return error instanceof MissingRequiredError
+			? `✗ please provide ${error.label}`
+			: super.formatError(error);
+	}
+}
+
+jinju({ error: new MyErrors({ hint: false }), commands });
+```
+
+`ErrorData` has the `program`, the `errors` (each a `JinjuError` subclass such as `MissingRequiredError`, `UnknownFlagError` or `InvalidValueError`, with its own details), the matched `path`, the `words` as typed, and the matched level's full `help` data, for showing usage or suggesting names.
+
+| Method                                     | Default                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------- |
+| `render(data)`                             | Joins `sections(data)` with blank lines and adds a trailing newline |
+| `sections(data)`                           | `[errors, hint]`; the hint is left out with `hint: false`           |
+| `formatErrors(data)`, `formatError(error)` | One `error: <message>` line per error                               |
+| `formatHint(data)`, `formatCommand(data)`  | `Run 'app my-site deploy --help' for usage.`                        |
 
 ---
 

@@ -3,6 +3,16 @@ import { describe, expect, expectTypeOf, test } from 'vitest';
 import * as jinju from './index';
 import type {
 	AnyArg,
+	HelpArg,
+	HelpCommand,
+	HelpData,
+	HelpFlag,
+	HelpParam,
+	HelpPathPart,
+	HelpProgram,
+	HelpRow,
+	HelpTemplate,
+	HelpTemplateOptions,
 	AnyCommand,
 	AnyFlag,
 	Arg,
@@ -12,6 +22,8 @@ import type {
 	CommandConfig,
 	CommandTree,
 	DefaultValue,
+	ErrorData,
+	ErrorTemplateOptions,
 	Defined,
 	Flag,
 	FlagOptions,
@@ -51,6 +63,8 @@ describe('runtime exports', () => {
 			'Command',
 			'ConfigError',
 			'DuplicateFlagError',
+			'ErrorTemplate',
+			'HelpTemplate',
 			'InvalidValueError',
 			'JinjuError',
 			'MissingRequiredError',
@@ -62,6 +76,7 @@ describe('runtime exports', () => {
 			'arg',
 			'command',
 			'flag',
+			'formatPath',
 			'jinju',
 			'scope',
 		]);
@@ -176,6 +191,37 @@ describe('type exports', () => {
 		expectTypeOf<CheckArgs<[Arg<string[], string>, Arg<string[], string>]>>().toHaveProperty(
 			'~error',
 		);
+	});
+
+	test('help types', () => {
+		expectTypeOf<HelpTemplate['render']>().parameter(0).toEqualTypeOf<HelpData>();
+		expectTypeOf<HelpTemplate['render']>().returns.toBeString();
+		expectTypeOf<HelpTemplate['formatFlag']>().returns.toEqualTypeOf<HelpRow>();
+		expectTypeOf<HelpTemplateOptions>().toEqualTypeOf<{
+			sortFlags?: boolean;
+			showHidden?: boolean;
+		}>();
+		expect(new jinju.HelpTemplate()).toBeInstanceOf(jinju.HelpTemplate);
+		expectTypeOf<HelpData['flags'][number]>().toEqualTypeOf<HelpFlag>();
+		expectTypeOf<HelpData['args'][number]>().toEqualTypeOf<HelpArg>();
+		expectTypeOf<HelpData['commands'][number]>().toEqualTypeOf<HelpCommand>();
+		expectTypeOf<HelpFlag>().toExtend<HelpParam>();
+		expectTypeOf<HelpArg>().toExtend<HelpParam>();
+		expectTypeOf<HelpCommand>().toExtend<HelpPathPart>();
+		expectTypeOf<HelpData['program']>().toEqualTypeOf<HelpProgram>();
+		expectTypeOf<HelpFlag['source']>().toEqualTypeOf<'command' | 'scope' | 'builtin'>();
+		expectTypeOf<HelpArg['source']>().toEqualTypeOf<'command' | 'scope'>();
+		expectTypeOf(jinju.formatPath).parameter(0).toEqualTypeOf<readonly HelpPathPart[]>();
+		expectTypeOf<ProgramConfig['help']>().toEqualTypeOf<HelpTemplate | undefined>();
+	});
+
+	test('error template types', () => {
+		expectTypeOf<jinju.ErrorTemplate['render']>().parameter(0).toEqualTypeOf<ErrorData>();
+		expectTypeOf<jinju.ErrorTemplate['render']>().returns.toBeString();
+		expectTypeOf<ErrorData['errors'][number]>().toEqualTypeOf<jinju.JinjuError>();
+		expectTypeOf<ErrorData['help']>().toEqualTypeOf<HelpData>();
+		expectTypeOf<ErrorTemplateOptions>().toEqualTypeOf<{ hint?: boolean }>();
+		expectTypeOf<ProgramConfig['error']>().toEqualTypeOf<jinju.ErrorTemplate | undefined>();
 	});
 
 	test('param base types', () => {

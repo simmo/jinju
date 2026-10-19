@@ -98,7 +98,7 @@ export const indexFlags = (flags: Record<string, unknown>): FlagIndex => {
 	return { entries, long: (name) => long.get(name), short: (char) => short.get(char) };
 };
 
-export const argLabel = (param: Param): string => `<${param.options.name ?? param.value.name}>`;
+const argLabel = (param: Param): string => `<${param.options.name ?? param.value.name}>`;
 
 /**
  * Distributes positionals across args. Args before the (single) multiple arg fill from the

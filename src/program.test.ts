@@ -2,8 +2,10 @@ import { describe, expect, test, vi } from 'vitest';
 
 import { arg } from './arg';
 import { command, scope } from './command';
+import { type ErrorData, ErrorTemplate } from './error-template';
 import { ConfigError, JinjuError } from './errors';
 import { flag } from './flag';
+import { type HelpData, HelpTemplate } from './help';
 import { jinju, type ProgramConfig } from './program';
 
 const d = { description: 'd' };
@@ -142,6 +144,30 @@ describe('errors', () => {
 		expect(output.stderr).toBe("error: Missing required --n\n\nRun 'app sync --help' for usage.\n");
 	});
 
+	test('an error template instance renders failures', async () => {
+		const seen: ErrorData[] = [];
+		class Short extends ErrorTemplate {
+			override render(data: ErrorData) {
+				seen.push(data);
+				return `${data.errors.length} error(s) in ${this.formatCommand(data)}\n`;
+			}
+		}
+		const { output, program } = setup({
+			error: new Short(),
+			commands: {
+				sync: command({ description: 'x', flags: { n: flag.number(d).required() }, run: () => {} }),
+			},
+		});
+		expect(await program.run(['sync', '--nope'])).toBe(1);
+		expect(output.stderr).toBe('2 error(s) in app sync\n');
+		expect(seen[0]).toMatchObject({
+			program: { name: 'app' },
+			path: [{ name: 'sync', dynamic: false }],
+			words: ['sync'],
+			help: { usage: ['app sync [flags]'] },
+		});
+	});
+
 	test('unknown commands', async () => {
 		const { output, program } = setup({
 			commands: { sync: command({ description: 'x', run: () => {} }) },
@@ -262,6 +288,28 @@ describe('help and version', () => {
 		expect(out.stdout).toContain('app db <command>');
 	});
 
+	test('a help template instance renders --help and help()', async () => {
+		const seen: string[][] = [];
+		class Custom extends HelpTemplate {
+			override render(data: HelpData) {
+				const path = data.path.map((part) => part.name);
+				seen.push(path);
+				return `${data.program.name}@${data.program.version} ${path.join(' ')}: ${data.commands.map((c) => c.name).join(',')}\n`;
+			}
+		}
+		const { output: out, program: custom } = setup({
+			version: '2.0.0',
+			help: new Custom(),
+			commands: {
+				sync: { files: app.command({ description: 'x', aliases: ['f'], run: () => {} }) },
+			},
+		});
+		expect(await custom.run(['sync', '--help'])).toBe(0);
+		expect(out.stdout).toBe('app@2.0.0 sync: files\n');
+		expect(custom.help(['sync', 'files'])).toBe('app@2.0.0 sync files: \n');
+		expect(seen).toEqual([['sync'], ['sync', 'files']]);
+	});
+
 	test('help() by path', () => {
 		expect(program.help(['sync', 'files'])).toContain('Sync only files');
 	});
@@ -380,6 +428,49 @@ describe('dynamic segments', () => {
 		expect(program.help(['site', 'prod', 'logs'])).toContain(
 			'Usage:\n  app <project> <env> logs [flags]\n',
 		);
+	});
+
+	test('help data describes subcommands from the tree', () => {
+		let captured: HelpData | undefined;
+		class Capture extends HelpTemplate {
+			override render(data: HelpData) {
+				captured = data;
+				return '';
+			}
+		}
+		const { program: tree } = setup({
+			help: new Capture(),
+			commands: {
+				list: command({ description: 'List', aliases: ['ls'], run: () => {} }),
+				':project': { deploy: project.command({ description: 'Deploy', run: () => {} }) },
+			},
+		});
+		tree.help();
+		expect(captured?.commands).toEqual([
+			{
+				name: 'list',
+				label: 'list',
+				description: 'List',
+				aliases: ['ls'],
+				hidden: false,
+				dynamic: false,
+				path: [{ name: 'list', dynamic: false }],
+				runnable: true,
+				group: false,
+			},
+			{
+				name: 'project',
+				label: '<project>',
+				description: 'Project name',
+				aliases: [],
+				hidden: false,
+				dynamic: true,
+				path: [{ name: 'project', dynamic: true }],
+				runnable: false,
+				group: true,
+			},
+		]);
+		expect(captured?.program).toEqual({ name: 'app' });
 	});
 
 	test('help for a segment level', async () => {
