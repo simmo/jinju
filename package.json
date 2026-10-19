@@ -41,14 +41,14 @@
 		"typecheck": "tsc --noEmit --extendedDiagnostics"
 	},
 	"devDependencies": {
-		"@release-it/keep-a-changelog": "^7.0.0",
+		"@release-it/keep-a-changelog": "^8.0.1",
 		"@tsconfig/node-lts": "^24.0.1",
 		"@types/node": "^26.6.5",
 		"@vitest/coverage-v8": "^5.0.5",
 		"fallow": "^3.34.1",
 		"oxfmt": "^0.74.0",
 		"oxlint": "^1.89.0",
-		"release-it": "^19.0.2",
+		"release-it": "^21.1.1",
 		"tsdown": "^0.23.1",
 		"tsx": "^4.23.15",
 		"typescript": "^6.0.3",

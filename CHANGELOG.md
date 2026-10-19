@@ -31,8 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build is ESM-only (`dist/index.js`, `dist/index.d.ts`), built with `tsdown` (rolldown), with `exports` fixed to match the build output
 - Requires Node `>=22`
 - Replaced `eslint` with `oxlint` and `prettier` with `oxfmt`
-- Updated `node` to `v24`, `vitest` to `v4` and `typescript` to `v6`
+- Updated `node` to `v24` (pinned to `24.22.0` in `.nvmrc`), `vitest` to `v4` and `typescript` to `v6`
 - Updated GitHub Actions `actions/checkout` and `actions/setup-node` to `v7`
+- Bump dependencies
 - VSCode config updates
 - Updated LICENSE date
 
