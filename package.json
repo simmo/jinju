@@ -27,14 +27,13 @@
 		}
 	},
 	"scripts": {
-		"build": "rollup -c rollup.config.ts --configPlugin typescript",
+		"build": "tsdown",
 		"dev": "tsx --watch ./src/example.ts",
 		"format:check": "oxfmt --check",
 		"format": "oxfmt",
 		"gen:fallow-badge": "fallow health --format badge > .github/badges/health.svg",
 		"lint:fix": "oxlint --fix",
 		"lint": "oxlint",
-		"prebuild": "rm -rf ./dist",
 		"release": "release-it",
 		"test": "vitest",
 		"test:coverage": "vitest run --coverage",
@@ -42,7 +41,6 @@
 	},
 	"devDependencies": {
 		"@release-it/keep-a-changelog": "^7.0.0",
-		"@rollup/plugin-typescript": "^12.1.2",
 		"@tsconfig/node-lts": "^24.0.1",
 		"@types/node": "^24.13.3",
 		"@vitest/coverage-v8": "^4.1.10",
@@ -50,8 +48,7 @@
 		"oxfmt": "^0.63.0",
 		"oxlint": "^1.78.0",
 		"release-it": "^19.0.2",
-		"rollup": "^4.40.2",
-		"rollup-plugin-dts": "^6.2.1",
+		"tsdown": "^0.23.1",
 		"tsx": "^4.20.5",
 		"typescript": "^6.0.3",
 		"vitest": "^4.1.10"

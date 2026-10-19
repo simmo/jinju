@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Build is ESM-only (`dist/index.js`, `dist/index.d.ts`), with `exports` fixed to match the build output
+- Build is ESM-only (`dist/index.js`, `dist/index.d.ts`), built with `tsdown` (rolldown), with `exports` fixed to match the build output
 - Requires Node `>=22`
 - Replaced `eslint` with `oxlint` and `prettier` with `oxfmt`
 - Updated `node` to `v24`, `vitest` to `v4` and `typescript` to `v6`
@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - The 0.0.1 APIs (`celebrate`, `debug`, `fail`, `log`, `spinner`, `success`, `warn`) and configuration support, replaced by the command-line toolkit above
-- CommonJS build and unused rollup plugins (`commonjs`, `json`, `node-resolve`, `terser`)
+- CommonJS build, and `rollup` with its plugins (replaced by `tsdown`)
 
 ## [0.0.1] - 2025-05-06
 
