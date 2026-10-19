@@ -1,4 +1,4 @@
-import { arg, flag, jinju, scope } from './index';
+import { arg, flag, jinju, packageVersion, scope } from './index';
 
 // Shared by every command: accepted before or after the command name.
 const app = scope({
@@ -60,7 +60,7 @@ const deploy = project.command({
 
 await jinju({
 	name: 'example',
-	version: '0.0.1',
+	version: packageVersion(import.meta.url),
 	description: 'jinju example program',
 	commands: { sync: { $: sync, repeat: repeatSync }, copy, ':project': { deploy } },
 }).run();

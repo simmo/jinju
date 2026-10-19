@@ -101,6 +101,26 @@ describe('routing', () => {
 		expect(seen).toEqual([2]);
 	});
 
+	test('a required scope flag is enforced for every command in the scope', async () => {
+		const seen: unknown[] = [];
+		const authed = scope({ flags: { token: flag.string({ alias: 't', ...d }).required() } });
+		const { output: out, program: scoped } = setup({
+			commands: {
+				deploy: authed.command({
+					description: 'x',
+					run: ({ flags }) => void seen.push(flags.token),
+				}),
+				logs: authed.command({ description: 'x', run: ({ flags }) => void seen.push(flags.token) }),
+			},
+		});
+		expect(await scoped.run(['deploy'])).toBe(1);
+		expect(await scoped.run(['logs'])).toBe(1);
+		expect(out.stderr).toContain('Missing required --token');
+		expect(await scoped.run(['-t', 'a', 'deploy'])).toBe(0);
+		expect(await scoped.run(['logs', '--token', 'b'])).toBe(0);
+		expect(seen).toEqual(['a', 'b']);
+	});
+
 	test('scope args come after the command path', async () => {
 		const seen: unknown[] = [];
 		const project = scope({ args: [arg.string({ name: 'project', ...d }).required()] });
@@ -486,6 +506,7 @@ describe('dynamic segments', () => {
 
 		test('commands must start with the segment arg', () => {
 			const x = command({ description: 'x', run: noop });
+			// @ts-expect-error also a compile-time error, with the same message
 			expect(() => jinju({ commands: { ':project': { x } } })).toThrow(
 				"Command '<project> x' must have an arg named 'project' at position 1 for segment ':project'",
 			);
@@ -536,5 +557,67 @@ describe('dynamic segments', () => {
 			expect(await direct.run(['ada'])).toBe(0);
 			expect(seen).toEqual([['ada']]);
 		});
+	});
+});
+
+describe('dynamic segment types', () => {
+	const noop = () => {};
+	const project = arg.string({ name: 'project', description: 'd' }).required();
+	const env = arg.string({ name: 'env', description: 'd' }).required();
+	const inScope = scope({ args: [project] });
+
+	test('valid trees compile', () => {
+		jinju({
+			commands: {
+				':project': {
+					$: inScope.command({ description: 'x', run: noop }),
+					deploy: command({ description: 'x', args: [project, env], run: noop }),
+					':env': { logs: command({ description: 'x', args: [project, env], run: noop }) },
+				},
+			},
+		});
+	});
+
+	test('a missing, unnamed or misnamed arg is a compile-time error', () => {
+		const none = command({ description: 'x', run: noop });
+		const unnamed = command({ description: 'x', args: [arg.string(d)], run: noop });
+		const misnamed = command({ description: 'x', args: [env], run: noop });
+		// @ts-expect-error no arg for the segment
+		expect(() => jinju({ commands: { ':project': { none } } })).toThrow(ConfigError);
+		// @ts-expect-error the arg has no name
+		expect(() => jinju({ commands: { ':project': { unnamed } } })).toThrow(ConfigError);
+		// @ts-expect-error the arg is named 'env'
+		expect(() => jinju({ commands: { ':project': { misnamed } } })).toThrow(ConfigError);
+	});
+
+	test('nested segments must match in order', () => {
+		const swapped = command({ description: 'x', args: [env, project], run: noop });
+		expect(() =>
+			// @ts-expect-error args are in the wrong order
+			jinju({ commands: { ':project': { ':env': { swapped } } } }),
+		).toThrow(ConfigError);
+	});
+
+	test('a segment arg cannot be multiple', () => {
+		const files = arg.string({ name: 'files', description: 'd' }).multiple();
+		const x = command({ description: 'x', args: [files], run: noop });
+		// @ts-expect-error multiple arg bound to a segment
+		expect(() => jinju({ commands: { ':files': { x } } })).toThrow(ConfigError);
+	});
+
+	test('the $ command at a segment level is checked too', () => {
+		const root = command({ description: 'x', run: noop });
+		// @ts-expect-error $ has no project arg
+		expect(() => jinju({ commands: { ':project': { $: root } } })).toThrow(ConfigError);
+	});
+
+	test('names that are not literal types are left to the runtime check', () => {
+		const name: string = 'project';
+		const loose = command({
+			description: 'x',
+			args: [arg.string({ name, description: 'd' })],
+			run: noop,
+		});
+		expect(() => jinju({ commands: { ':project': { loose } } })).not.toThrow();
 	});
 });

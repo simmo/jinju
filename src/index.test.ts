@@ -19,6 +19,10 @@ import type {
 	ArgList,
 	ArgOptions,
 	CheckArgs,
+	CheckTree,
+	NodeErrors,
+	SegmentError,
+	TreeErrors,
 	CommandConfig,
 	CommandTree,
 	DefaultValue,
@@ -78,6 +82,7 @@ describe('runtime exports', () => {
 			'flag',
 			'formatPath',
 			'jinju',
+			'packageVersion',
 			'scope',
 		]);
 	});
@@ -182,6 +187,10 @@ describe('type exports', () => {
 			{ ok: true; value: number } | { ok: false; errors: jinju.JinjuError[] }
 		>();
 		expectTypeOf<CommandTree>().toBeObject();
+		expectTypeOf<CheckTree<{ x: jinju.Command }>>().toBeUnknown();
+		expectTypeOf<TreeErrors<{ x: jinju.Command }, [], ''>>().toBeNever();
+		expectTypeOf<NodeErrors<jinju.Command, [], 'x'>>().toBeNever();
+		expectTypeOf<SegmentError<[], ['a'], 'x'>>().toBeString();
 		expectTypeOf<ProgramConfig>().toHaveProperty('commands');
 		expectTypeOf<jinju.Command>().toExtend<AnyCommand>();
 		expectTypeOf<ParseOptions>().toHaveProperty('strict');

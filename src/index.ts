@@ -41,6 +41,7 @@ export type {
 	InferFlagType,
 	MergeFlags,
 } from './infer';
+export { packageVersion } from './package';
 export type {
 	DefaultValue,
 	Defined,
@@ -66,5 +67,6 @@ export {
 	HelpTemplate,
 	type HelpTemplateOptions,
 } from './help';
-export { type CommandTree, jinju, Program, type ProgramConfig } from './program';
+export { jinju, Program, type ProgramConfig } from './program';
+export type { CheckTree, CommandTree, NodeErrors, SegmentError, TreeErrors } from './tree';
 export type { NumberOptions, Parse, PathOptions, StringOptions, ValueType } from './value';

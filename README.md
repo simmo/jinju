@@ -119,7 +119,7 @@ jinju({ commands: { list, ':project': { deploy } } });
 
 - Segment values are ordinary args: they're parsed and validated by the arg, and appear first in `args`. Nested segments (`{ ':project': { ':env': { logs } } }`) fill the leading args in order.
 - Static names win over a segment: `app list` runs `list`, not a project named `list`.
-- `jinju()` checks the setup and throws a `ConfigError` if:
+- When arg names are literals (as above), mistakes are compile-time errors on `commands`, e.g. `Command '<project> x' must have an arg named 'project' at position 1 for segment ':project'`. `jinju()` also checks the setup at runtime and throws a `ConfigError` if:
   - a command under a segment doesn't have the matching named arg at the right position;
   - the segment's arg is `.multiple()`;
   - a level has more than one segment;
@@ -133,7 +133,7 @@ jinju({ commands: { list, ':project': { deploy } } });
 - Nest objects for subcommands. `$` is the command for that level. A `:name` key is a dynamic segment (see below).
 - Routing takes the longest matching command path. A flag not inherited by any command below that point, or `--`, ends the path.
 - Help lists every flag a command accepts (its own, inherited and built-in) in one table, sorted by name.
-- `--help`/`-h` and `--version` are built in.
+- `--help`/`-h` and `--version` are built in. Use `packageVersion(import.meta.url)` to read `version` from your CLI's nearest `package.json`.
 - Errors are collected and printed with a usage hint. Exit code `1`.
 - `run()` resolves to the exit code and sets `process.exitCode`. Override this with `exit`.
 

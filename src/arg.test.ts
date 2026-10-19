@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, expectTypeOf, test } from 'vitest';
 
 import { Arg, arg } from './arg';
 import { toParam } from './param';
@@ -51,4 +51,14 @@ test('custom', async () => {
 	const param = toParam(upper(d));
 	expect(param.value.name).toBe('word');
 	expect(await param.resolve(['a'], '<x>')).toEqual({ ok: true, value: 'A' });
+});
+
+test('literal names are kept in the type', () => {
+	const named = arg.string({ name: 'project', description: 'd' }).required().multiple();
+	expectTypeOf(named).toEqualTypeOf<Arg<string[], string, 'project'>>();
+	expectTypeOf(arg.number(d)).toEqualTypeOf<Arg<number | undefined, number, undefined>>();
+	const choice = arg.string({ name: 'env', description: 'd', choices: ['a', 'b'] });
+	expectTypeOf(choice).toEqualTypeOf<Arg<'a' | 'b' | undefined, 'a' | 'b', 'env'>>();
+	const custom = arg.custom((input) => input.length)({ name: 'size', description: 'd' });
+	expectTypeOf(custom).toEqualTypeOf<Arg<number | undefined, number, 'size'>>();
 });

@@ -17,23 +17,15 @@ import {
 } from './help';
 import { type Param, toParam } from './param';
 import { type FlagLookup, type FlagSpec, isFlag, readFlag, tokenize } from './tokenize';
+import type { CheckTree, CommandTree } from './tree';
 
-/**
- * Commands keyed by name. Nest objects for subcommands; `$` is the command for that level.
- * A `:name` key is a dynamic segment: it captures one word into the commands' arg named
- * `name`, e.g. `{ ':project': { deploy } }` routes `app my-site deploy`.
- */
-export interface CommandTree {
-	readonly [key: string]: AnyCommand | CommandTree;
-}
-
-export interface ProgramConfig {
+export interface ProgramConfig<T extends CommandTree = CommandTree> {
 	/** Shown in usage. Defaults to the executed script's name. */
 	name?: string;
 	/** Enables `--version`. */
 	version?: string;
 	description?: string;
-	commands: CommandTree;
+	commands: T & CheckTree<T>;
 	/** Reject unknown flags. Defaults to `true`. */
 	strict?: boolean;
 	/** Renders help pages. Defaults to `new HelpTemplate()`; extend it to customise. */
@@ -432,4 +424,6 @@ const programName = (): string => {
 };
 
 /** Creates a program from a tree of commands. */
-export const jinju = (config: ProgramConfig): Program => new Program(config);
+export const jinju = <const T extends CommandTree>(config: ProgramConfig<T>): Program =>
+	// `CheckTree` only narrows what's accepted; the tree itself is a plain `CommandTree`.
+	new Program({ ...config, commands: config.commands as CommandTree });
