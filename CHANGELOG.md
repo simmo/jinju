@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Requires Node `>=22`
 - Replaced `eslint` with `oxlint` and `prettier` with `oxfmt`
 - Updated `node` to `v24`, `vitest` to `v4` and `typescript` to `v6`
+- Updated GitHub Actions `actions/checkout` and `actions/setup-node` to `v7`
 - VSCode config updates
 - Updated LICENSE date
 
