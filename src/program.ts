@@ -298,7 +298,9 @@ export class Program {
 				this.#addDynamic(node, key, value);
 				continue;
 			}
-			const command = value instanceof Command ? value : (value.$ as AnyCommand | undefined);
+			// A subtree's `$` gives its name/aliases; an invalid `$` is reported when it's built.
+			const command =
+				value instanceof Command ? value : value.$ instanceof Command ? value.$ : undefined;
 			const name = command?.config.name ?? kebabCase(key);
 			const child = this.#child(value, [...path, { name, dynamic: false }], segments);
 

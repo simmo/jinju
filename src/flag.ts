@@ -71,8 +71,8 @@ export class Switch<T> extends Param<T, T> {
 
 	/** Resolves from occurrences: `--x` → `true`, `--no-x` → `false`. */
 	resolveSwitch(occurrences: readonly boolean[]): T {
-		if (occurrences.length === 0) return this.defaultValue as T;
-		return this.toggle(occurrences);
+		const [first, ...rest] = occurrences;
+		return first === undefined ? (this.defaultValue as T) : this.toggle([first, ...rest]);
 	}
 }
 
@@ -105,7 +105,7 @@ const toggle = <V>(valueName: string, initial: V, reduce: Toggle<V>) => {
 
 export const flag = {
 	/** `--name` → `true`, `--no-name` → `false`. Defaults to `false`. */
-	boolean: toggle('boolean', false, (occurrences) => occurrences.at(-1) ?? false),
+	boolean: toggle('boolean', false, (occurrences) => occurrences.reduce((_, on) => on)),
 	/** Counts occurrences: `-vvv` → `3`; `--no-name` resets to `0`. Defaults to `0`. */
 	count: toggle('count', 0, (occurrences) =>
 		occurrences.reduce((count, on) => (on ? count + 1 : 0), 0),

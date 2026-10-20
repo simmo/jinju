@@ -1,9 +1,9 @@
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { arg } from './arg';
 import { command, scope } from './command';
 import { type ErrorData, ErrorTemplate } from './error-template';
-import { ConfigError, JinjuError } from './errors';
+import { ConfigError, JinjuError, UnknownCommandError } from './errors';
 import { flag } from './flag';
 import { type HelpData, HelpTemplate } from './help';
 import { jinju, type ProgramConfig } from './program';
@@ -619,5 +619,101 @@ describe('dynamic segment types', () => {
 			run: noop,
 		});
 		expect(() => jinju({ commands: { ':project': { loose } } })).not.toThrow();
+	});
+});
+
+describe('defaults', () => {
+	const ok = command({ description: 'x', run: () => {} });
+	const exitCode = process.exitCode;
+	const argv = process.argv;
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+		process.exitCode = exitCode;
+		process.argv = argv;
+	});
+
+	test('output goes to process.stdout and process.stderr', async () => {
+		const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+		const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+		const program = jinju({ name: 'app', exit: () => {}, commands: { ok } });
+		await program.run(['--help']);
+		await program.run(['nope']);
+		expect(stdout).toHaveBeenCalledWith(expect.stringContaining('Usage:'));
+		expect(stderr).toHaveBeenCalledWith(expect.stringContaining("Unknown command 'nope'"));
+	});
+
+	test('the exit code is set on process.exitCode', async () => {
+		const program = jinju({
+			name: 'app',
+			stderr: () => {},
+			commands: { ok, fail: command({ description: 'x', run: () => 3 }) },
+		});
+		await program.run(['ok']);
+		expect(process.exitCode).toBe(0);
+		await program.run(['fail']);
+		expect(process.exitCode).toBe(3);
+	});
+
+	test('the name comes from the script, falling back to cli', () => {
+		process.argv = ['node', '/usr/local/bin/my-tool.js'];
+		expect(jinju({ commands: { ok } }).name).toBe('my-tool');
+		process.argv = ['node'];
+		expect(jinju({ commands: { ok } }).name).toBe('cli');
+	});
+
+	test('run() defaults to process.argv after the script', async () => {
+		const seen: unknown[] = [];
+		process.argv = ['node', 'app.js', 'go', 'now'];
+		const go = command({
+			description: 'x',
+			args: [arg.string(d)],
+			run: ({ args }) => void seen.push(args),
+		});
+		await jinju({ name: 'app', exit: () => {}, commands: { go } }).run();
+		expect(seen).toEqual([['now']]);
+	});
+});
+
+describe('edge cases', () => {
+	test('a program with no commands shows help', async () => {
+		const { output, program } = setup({ description: 'Empty', commands: {} });
+		expect(await program.run([])).toBe(0);
+		expect(output.stdout).toBe('Empty\n\nUsage:\n\n\nFlags:\n  -h, --help  Show help\n');
+	});
+
+	test('a dynamic segment with nothing below it has no description', () => {
+		const { program } = setup({ commands: { ':project': {} } });
+		expect(program.help()).toContain('Commands:\n  <project>\n');
+	});
+
+	test('help() rejects unknown paths', () => {
+		const { program } = setup({
+			commands: { sync: { files: command({ description: 'x', run: () => {} }) } },
+		});
+		expect(() => program.help(['sync', 'nope'])).toThrow(new UnknownCommandError('nope'));
+	});
+
+	test('$ must be a command', () => {
+		// A subtree under `$` type-checks (`CommandTree` allows it), so only the runtime check applies.
+		expect(() => jinju({ commands: { $: { nested: {} } } })).toThrow(
+			"'$' must be a command (at 'root')",
+		);
+		// @ts-expect-error not a command
+		expect(() => jinju({ commands: { sync: { $: 'run' } } })).toThrow(
+			"'$' must be a command (at 'sync')",
+		);
+	});
+
+	test('shared flags with long aliases are accepted before the command name', async () => {
+		const seen: unknown[] = [];
+		const inDir = scope({ flags: { cwd: flag.string({ alias: 'dir', ...d }) } });
+		const { program } = setup({
+			commands: {
+				sync: inDir.command({ description: 'x', run: ({ flags }) => void seen.push(flags.cwd) }),
+			},
+		});
+		expect(await program.run(['--dir', 'src', 'sync'])).toBe(0);
+		expect(seen).toEqual(['src']);
 	});
 });

@@ -43,8 +43,11 @@ export interface ParamOptions {
 	choices?: readonly string[];
 }
 
-/** Reduces switch occurrences (`--x` → true, `--no-x` → false) to a value. */
-export type Toggle<V> = (occurrences: readonly boolean[]) => V;
+/**
+ * Reduces switch occurrences (`--x` → true, `--no-x` → false) to a value. Only called when
+ * the switch was given at least once; otherwise its default is used.
+ */
+export type Toggle<V> = (occurrences: readonly [boolean, ...boolean[]]) => V;
 
 export interface ParamInit<V> {
 	value: ValueType<V>;

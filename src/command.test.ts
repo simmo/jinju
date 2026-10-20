@@ -71,8 +71,10 @@ describe('parse', () => {
 	});
 
 	test('switch inline values', async () => {
-		const result = await sync.parse(['a', '--dry-run=false']);
-		expect(result.ok && result.value.flags.dryRun).toBe(false);
+		const off = await sync.parse(['a', '--dry-run=false']);
+		expect(off.ok && off.value.flags.dryRun).toBe(false);
+		const on = await sync.parse(['a', '--dry-run=true']);
+		expect(on.ok && on.value.flags.dryRun).toBe(true);
 		const invalid = await sync.parse(['a', '--dry-run=maybe']);
 		expect(invalid.ok || invalid.errors[0]!.message).toBe(
 			"Invalid value 'maybe' for --dry-run: must be true or false",
@@ -135,6 +137,16 @@ describe('configuration errors', () => {
 		expect(() => command({ description: 'x', args: [files, files], run: noop })).toThrow(
 			'Only one arg can be .multiple()',
 		);
+	});
+
+	test('flags and args must be created with flag.* / arg.*', () => {
+		const fake = { kind: 'flag', options: d };
+		// @ts-expect-error not a flag
+		expect(() => command({ description: 'x', flags: { fake }, run: noop })).toThrow(
+			'Expected a flag or arg',
+		);
+		// @ts-expect-error not an arg
+		expect(() => command({ description: 'x', args: [fake], run: noop })).toThrow(TypeError);
 	});
 
 	test('invalid names', () => {

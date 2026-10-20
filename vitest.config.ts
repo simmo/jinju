@@ -6,6 +6,8 @@ export default defineConfig({
 			include: ['src/**/*.ts'],
 			exclude: ['src/example.ts', 'src/**/*.test.ts'],
 			reporter: ['text'],
+			// Every line, statement, function and branch in `src` must be tested.
+			thresholds: { 100: true },
 		},
 		projects: [
 			{

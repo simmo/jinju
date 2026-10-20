@@ -58,6 +58,17 @@ describe('resolve', () => {
 		expect(result.ok || result.errors[0]!.message).toBe('--x can only be provided once');
 	});
 
+	test('parsers may throw non-Error values', async () => {
+		const shouty = flag.custom((input: string): string => {
+			// oxlint-disable-next-line no-throw-literal
+			throw `${input} is not loud enough`;
+		});
+		const result = await resolve(shouty(d), ['hi']);
+		expect(result.ok || result.errors[0]!.message).toBe(
+			"Invalid value 'hi' for --x: hi is not loud enough",
+		);
+	});
+
 	test('collects every invalid value', async () => {
 		const result = await resolve(flag.number(d).multiple(), ['a', '1', 'b']);
 		expect(result.ok || result.errors.map((error) => error.message)).toEqual([
@@ -73,5 +84,19 @@ describe('resolve', () => {
 
 	test('args share the same machinery', async () => {
 		expect(await resolve(arg.number(d).required(), ['3'])).toEqual({ ok: true, value: 3 });
+	});
+});
+
+describe('toParam', () => {
+	test('accepts flags, switches and args', () => {
+		for (const param of [flag.string(d), flag.boolean(d), arg.number(d)]) {
+			expect(toParam(param)).toBe(param);
+		}
+	});
+
+	test('rejects anything else', () => {
+		for (const value of [{}, null, 'flag', { kind: 'flag', options: d }]) {
+			expect(() => toParam(value)).toThrow(new TypeError('Expected a flag or arg'));
+		}
 	});
 });

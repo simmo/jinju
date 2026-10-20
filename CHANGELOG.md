@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `packageVersion(import.meta.url)` reads `version` from the nearest `package.json`, for `jinju({ version })`
 - Tokenizer support for `--x=v`, `--x v`, `-xv`, bundled shorts (`-abc`), negative numbers as values and `--`
 - Error classes extending `JinjuError`; errors are collected and reported together
-- Tooling: `fallow` (with type-aware analysis enabled, and `fallow dead-code` checked in CI), CI tests on Node 22, 24 and 26 (including loading the build with `require()`), coverage checks, CI summary support and type tests run by `vitest`
+- Tooling: `fallow` (with type-aware analysis enabled, and `fallow dead-code` checked in CI), CI tests on Node 22, 24 and 26 (including loading the build with `require()`), coverage checks (100% required), CI summary support and type tests run by `vitest`
 - `AGENTS.md` (imported by `CLAUDE.md`) with contributor guidance for coding agents, including keeping the changelog up to date
 
 ### Changed

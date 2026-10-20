@@ -27,6 +27,7 @@ Before reporting work as done, run tests, typecheck, lint, format and dead-code.
 
 ## Conventions
 
+- Coverage of `src` must stay at 100% (lines, statements, functions and branches); `npm run test:coverage` fails otherwise. Remove unreachable code rather than excluding it.
 - Each `src/<name>.ts` has a matching `src/<name>.test.ts`, except `example.ts`. Type assertions (`expectTypeOf`, `@ts-expect-error`) go in the same file as the runtime tests.
 - Changes to the public API also update `src/index.test.ts`, which pins the exports, and the API section of `README.md`.
 - Types should show resolved values in editors (e.g. `string[] | undefined`). Don't expose type-alias names like `Foo<Bar>`. Check by hovering, or with the TypeScript checker's `typeToString`.
