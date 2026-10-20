@@ -23,13 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `packageVersion(import.meta.url)` reads `version` from the nearest `package.json`, for `jinju({ version })`
 - Tokenizer support for `--x=v`, `--x v`, `-xv`, bundled shorts (`-abc`), negative numbers as values and `--`
 - Error classes extending `JinjuError`; errors are collected and reported together
-- Tooling: `fallow` (with type-aware analysis enabled, and `fallow dead-code` checked in CI), coverage checks, CI summary support and type tests run by `vitest`
+- Tooling: `fallow` (with type-aware analysis enabled, and `fallow dead-code` checked in CI), CI tests on Node 22, 24 and 26 (including loading the build with `require()`), coverage checks, CI summary support and type tests run by `vitest`
 - `AGENTS.md` (imported by `CLAUDE.md`) with contributor guidance for coding agents, including keeping the changelog up to date
 
 ### Changed
 
 - Build is ESM-only (`dist/index.js`, `dist/index.d.ts`), built with `tsdown` (rolldown), with `exports` fixed to match the build output
-- Requires Node `>=22`
+- Requires Node `>=22.12`. CommonJS projects can `require('jinju')`, which loads the ESM build
 - Replaced `eslint` with `oxlint` and `prettier` with `oxfmt`
 - Updated `node` to `v24` (pinned to `24.22.0` in `.nvmrc`), `vitest` to `v4` and `typescript` to `v6`
 - Updated GitHub Actions `actions/checkout` and `actions/setup-node` to `v7`

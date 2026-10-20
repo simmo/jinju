@@ -36,8 +36,9 @@
 		"lint:fix": "oxlint --fix",
 		"lint": "oxlint",
 		"release": "release-it",
-		"test": "vitest",
-		"test:coverage": "vitest run --coverage",
+		"test": "vitest --project unit",
+		"test:coverage": "vitest run --coverage --project unit",
+		"test:package": "vitest run --project package",
 		"typecheck": "tsc --noEmit --extendedDiagnostics"
 	},
 	"devDependencies": {
@@ -59,7 +60,7 @@
 		"*.{js,jsx,ts,tsx,mjs,cjs}": "npm run lint"
 	},
 	"engines": {
-		"node": ">=22"
+		"node": ">=22.12"
 	},
 	"release-it": {
 		"github": {

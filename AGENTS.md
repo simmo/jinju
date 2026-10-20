@@ -16,10 +16,11 @@ Every change that affects users, the public API, the build or tooling must updat
 
 ## Commands
 
-- `npm test` runs vitest, which runs every `*.test.ts` both as runtime tests and as type tests
+- `npm test` runs the `unit` vitest project: every `src/**/*.test.ts`, both as runtime tests and as type tests
 - `npm run typecheck`, `npm run lint`, `npm run format` (`format:check` in CI)
 - `npm run dead-code` runs `fallow dead-code` (unused code, private type leaks, circular dependencies; type-aware via `.fallowrc.jsonc`)
-- `npm run build` produces `dist/index.js` and `dist/index.d.ts` (ESM-only)
+- `npm run build` produces `dist/index.js` and `dist/index.d.ts` (ESM-only; CommonJS consumers load it with `require()`, Node >= 22.12)
+- `npm run test:package` runs the `package` vitest project (`test/**/*.test.ts`) against the built `dist`, e.g. loading it with `require('jinju')` (run after `build`)
 - `npx tsx src/example.ts <args>` runs the example CLI
 
 Before reporting work as done, run tests, typecheck, lint, format and dead-code.
