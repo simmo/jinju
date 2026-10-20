@@ -51,19 +51,40 @@ export type NodeErrors<V, S extends readonly string[], At extends string> =
 
 /**
  * Problems anywhere in tree `T`, or `never`. Trees typed only as `CommandTree` (index
- * signatures) have no known keys, so they aren't checked.
+ * signatures) have no known keys, so they aren't checked. Besides each entry's own
+ * problems, a level must have a command (not a tree) as `$`, at most one `:segment`, and
+ * no positional args on `$` next to a segment.
  */
 export type TreeErrors<T, S extends readonly string[], At extends string> = string extends keyof T
 	? never
-	: {
-			[K in keyof T & string]: K extends ':'
-				? never // Invalid name; reported by the runtime check.
-				: K extends `:${infer Name}`
-					? NodeErrors<T[K], [...S, Name], `${At}${At extends '' ? '' : ' '}<${Name}>`>
-					: K extends '$'
-						? NodeErrors<T[K], S, At extends '' ? 'root' : At>
-						: NodeErrors<T[K], S, `${At}${At extends '' ? '' : ' '}${K}`>;
-		}[keyof T & string];
+	:
+			| {
+					[K in keyof T & string]: K extends ':'
+						? never // Invalid name; reported by the runtime check.
+						: K extends `:${infer Name}`
+							? NodeErrors<T[K], [...S, Name], `${At}${At extends '' ? '' : ' '}<${Name}>`>
+							: K extends '$'
+								? T[K] extends AnyCommand
+									? NodeErrors<T[K], S, At extends '' ? 'root' : At>
+									: `'$' must be a command (at '${At extends '' ? 'root' : At}')`
+								: NodeErrors<T[K], S, `${At}${At extends '' ? '' : ' '}${K}`>;
+			  }[keyof T & string]
+			// More than one segment: some segment key leaves others when removed.
+			| {
+					[K in Exclude<keyof T & `:${string}`, ':'>]: [
+						Exclude<Exclude<keyof T & `:${string}`, ':'>, K>,
+					] extends [never]
+						? never
+						: `'${At extends '' ? 'root' : At}' can only have one dynamic segment`;
+			  }[Exclude<keyof T & `:${string}`, ':'>]
+			// `$` next to a segment: its args may only be the segment args above it.
+			| ([Exclude<keyof T & `:${string}`, ':'>] extends [never]
+					? never
+					: T extends { $: Command<FlagRecord, infer A extends ArgList> }
+						? A extends readonly [...{ [I in keyof S]: unknown }, unknown, ...unknown[]]
+							? `'${At extends '' ? 'root' : At}' has a dynamic segment, so its '$' command can't take positional args`
+							: never
+						: never);
 
 /** Resolves to an unsatisfiable shape describing the first problem with dynamic segments. */
 export type CheckTree<T> = [TreeErrors<T, [], ''>] extends [never]

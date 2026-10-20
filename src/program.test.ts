@@ -525,6 +525,7 @@ describe('dynamic segments', () => {
 
 		test('one dynamic segment per level', () => {
 			const x = command({ description: 'x', args: [named('a')], run: noop });
+			// @ts-expect-error also a compile-time error, with the same message
 			expect(() => jinju({ commands: { ':a': { x }, ':b': { x } } })).toThrow(
 				"'root' can only have one dynamic segment",
 			);
@@ -533,6 +534,7 @@ describe('dynamic segments', () => {
 		test("a level's $ command can't take positional args next to a segment", () => {
 			const root = command({ description: 'x', args: [named('file')], run: noop });
 			const x = command({ description: 'x', args: [named('a')], run: noop });
+			// @ts-expect-error also a compile-time error, with the same message
 			expect(() => jinju({ commands: { $: root, ':a': { x } } })).toThrow(
 				"'root' has a dynamic segment, so its '$' command can't take positional args",
 			);
@@ -695,7 +697,7 @@ describe('edge cases', () => {
 	});
 
 	test('$ must be a command', () => {
-		// A subtree under `$` type-checks (`CommandTree` allows it), so only the runtime check applies.
+		// @ts-expect-error a tree isn't a command (compile-time error with the same message)
 		expect(() => jinju({ commands: { $: { nested: {} } } })).toThrow(
 			"'$' must be a command (at 'root')",
 		);

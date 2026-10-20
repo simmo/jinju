@@ -119,11 +119,15 @@ jinju({ commands: { list, ':project': { deploy } } });
 
 - Segment values are ordinary args: they're parsed and validated by the arg, and appear first in `args`. Nested segments (`{ ':project': { ':env': { logs } } }`) fill the leading args in order.
 - Static names win over a segment: `app list` runs `list`, not a project named `list`.
-- When arg names are literals (as above), mistakes are compile-time errors on `commands`, e.g. `Command '<project> x' must have an arg named 'project' at position 1 for segment ':project'`. `jinju()` also checks the setup at runtime and throws a `ConfigError` if:
-  - a command under a segment doesn't have the matching named arg at the right position;
-  - the segment's arg is `.multiple()`;
+- Mistakes in the tree are compile-time errors on `commands`, worded like the `ConfigError` that `jinju()` throws for them at runtime:
+  - `$` isn't a command (subcommands go under named keys next to it): `'$' must be a command (at 'sync')`;
   - a level has more than one segment;
-  - a level's `$` command takes its own positional args alongside a segment.
+  - a level's `$` command takes its own positional args alongside a segment;
+  - a command under a segment doesn't have the matching named arg at the right position, e.g. `Command '<project> x' must have an arg named 'project' at position 1 for segment ':project'`;
+  - the segment's arg is `.multiple()`.
+
+  The arg checks need literal names (as above); args named with a plain `string` are only checked at runtime.
+
 - Help shows segments in the path (`app <project> deploy [<env>]`). Error hints use the values that were actually typed (`Run 'app my-site deploy --help'`).
 
 ### Program
