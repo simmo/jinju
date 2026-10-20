@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced `eslint` with `oxlint` and `prettier` with `oxfmt`
 - Updated `node` to `v24` (pinned to `24.22.0` in `.nvmrc`), `vitest` to `v4` and `typescript` to `v6`
 - Updated GitHub Actions `actions/checkout` and `actions/setup-node` to `v7`
+- Releases publish to npm with Trusted Publishing (OIDC) instead of an `NPM_TOKEN` secret, and published versions now carry provenance. Prereleases run from `release.yml` after CI passes on `main`
 - Bump dependencies
 - VSCode config updates
 - Updated LICENSE date

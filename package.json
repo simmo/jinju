@@ -65,6 +65,9 @@
 		"github": {
 			"release": true
 		},
+		"npm": {
+			"skipChecks": true
+		},
 		"plugins": {
 			"@release-it/keep-a-changelog": {
 				"addUnreleased": true,

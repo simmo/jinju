@@ -1,10 +1,6 @@
 name: Setup
 description:
 
-inputs:
-  npm-token:
-    type: string
-
 runs:
   using: 'composite'
   steps:
@@ -17,11 +13,6 @@ runs:
     - name: Install
       shell: bash
       run: npm ci
-
-    - name: Configure NPM
-      shell: bash
-      if: inputs.npm-token
-      run: npm config set //registry.npmjs.org/:_authToken ${{ inputs.npm-token }}
 
     - name: Configure Git
       shell: bash
