@@ -1,4 +1,5 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, expectTypeOf, test } from 'vitest';
+import { z } from 'zod';
 
 import { Flag, flag, Switch } from './flag';
 import { toParam } from './param';
@@ -106,5 +107,45 @@ describe('custom', () => {
 
 	test('defaults the display name to value', () => {
 		expect(toParam(flag.custom((input) => input)(d)).value.name).toBe('value');
+	});
+});
+
+describe('schema', () => {
+	const port = flag.schema(z.coerce.number().int().min(1), 'port');
+
+	test('creates value flags validated by the schema', async () => {
+		const param = toParam(port(d).multiple());
+		expect(param.value.name).toBe('port');
+		expect(await param.resolve(['80', '443'], '--port')).toEqual({ ok: true, value: [80, 443] });
+		expect(await param.resolve(['0'], '--port')).toMatchObject({
+			ok: false,
+			errors: [{ message: expect.stringMatching(/^Invalid value '0' for --port: Too small/) }],
+		});
+	});
+
+	test('types come from the schema output', () => {
+		expectTypeOf(port(d)).toEqualTypeOf<Flag<number | undefined, number>>();
+		const level = flag
+			.schema(z.enum(['low', 'high']))(d)
+			.default('low');
+		expectTypeOf(level).toEqualTypeOf<Flag<'low' | 'high', 'low' | 'high'>>();
+		// @ts-expect-error undefined means "not provided", so schemas can't output it
+		flag.schema(z.string().optional());
+	});
+
+	test('schemas must be able to receive a string', () => {
+		const declared = z.coerce.number().int();
+		expectTypeOf(flag.schema(declared)(d)).toEqualTypeOf<Flag<number | undefined, number>>();
+		expectTypeOf(flag.schema(z.enum(['a', 'b']))(d)).toEqualTypeOf<
+			Flag<'a' | 'b' | undefined, 'a' | 'b'>
+		>();
+		// @ts-expect-error command-line values are strings; use z.coerce.number()
+		flag.schema(z.number());
+		// @ts-expect-error use z.stringbool() or flag.boolean()
+		flag.schema(z.boolean());
+	});
+
+	test('defaults the display name to value', () => {
+		expect(toParam(flag.schema(z.string())(d)).value.name).toBe('value');
 	});
 });

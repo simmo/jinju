@@ -43,6 +43,14 @@ export type {
 } from './infer';
 export { packageVersion } from './package';
 export type {
+	CheckSchemaInput,
+	SchemaInput,
+	SchemaOutput,
+	StandardSchemaIssue,
+	StandardSchemaResult,
+	StandardSchemaV1,
+} from './schema';
+export type {
 	DefaultValue,
 	Defined,
 	IsMultiple,

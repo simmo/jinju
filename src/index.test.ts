@@ -55,6 +55,12 @@ import type {
 	Scope,
 	ScopeConfig,
 	ScopeDefinition,
+	CheckSchemaInput,
+	SchemaInput,
+	SchemaOutput,
+	StandardSchemaIssue,
+	StandardSchemaResult,
+	StandardSchemaV1,
 	StringOptions,
 	Switch,
 	Toggle,
@@ -96,6 +102,7 @@ describe('runtime exports', () => {
 			'email',
 			'file',
 			'number',
+			'schema',
 			'string',
 			'url',
 		]);
@@ -105,6 +112,7 @@ describe('runtime exports', () => {
 			'email',
 			'file',
 			'number',
+			'schema',
 			'string',
 			'url',
 		]);
@@ -200,6 +208,16 @@ describe('type exports', () => {
 		expectTypeOf<CheckArgs<[Arg<string[], string>, Arg<string[], string>]>>().toHaveProperty(
 			'~error',
 		);
+	});
+
+	test('standard schema types', () => {
+		expectTypeOf<StandardSchemaV1<string, number>['~standard']['validate']>().returns.toEqualTypeOf<
+			StandardSchemaResult<number> | Promise<StandardSchemaResult<number>>
+		>();
+		expectTypeOf<StandardSchemaIssue>().toHaveProperty('message');
+		expectTypeOf<SchemaInput<StandardSchemaV1<string, number>>>().toEqualTypeOf<string>();
+		expectTypeOf<SchemaOutput<StandardSchemaV1<string, number>>>().toEqualTypeOf<number>();
+		expectTypeOf<CheckSchemaInput<StandardSchemaV1<string, number>>>().toBeUnknown();
 	});
 
 	test('help types', () => {

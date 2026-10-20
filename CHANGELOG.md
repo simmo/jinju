@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Flags: `flag.string` (with typed `choices`), `flag.number` (`min`, `max`, `integer`), `flag.url`, `flag.email`, `flag.directory` and `flag.file` (`exists`), and `flag.custom` for user-defined parsers, which may be async
+- Standard Schema support: `flag.schema(schema, name?)` and `arg.schema(schema, name?)` use any Standard Schema (zod, valibot, arktype, …) as the parser, with types from the schema's output. Schemas that can't receive a string (e.g. `z.number()`) are type errors. No new dependencies; a compatible `StandardSchemaV1` type is exported
 - Environment variable fallback: `env: 'API_TOKEN'` on any flag reads the variable when the flag isn't given (priority: argv, env, default), parsed and validated like a command-line value. `jinju({ env })` supplies the variables (defaults to `process.env`), and `HelpFlag.env` exposes them to help templates
 - Switches: `flag.boolean` (with `--no-x` negation) and `flag.count` (`-vvv`)
 - Positional args: `arg.*` creators sharing the same parsers as flags, plus `arg.custom`

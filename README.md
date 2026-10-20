@@ -76,6 +76,29 @@ All flags share `{description, alias?, hidden?, env?}`. The object key is the fl
 
 Custom types: `flag.custom((input, options) => value, 'name')` returns a creator. Throw to reject input; parsers may be async. `arg.custom` accepts the same parser.
 
+Any [Standard Schema](https://standardschema.dev) (zod, valibot, arktype, …) can be used as a parser with `flag.schema(schema, name?)` or `arg.schema(schema, name?)`. Both return a creator, like `custom`:
+
+```ts
+import { z } from 'zod';
+
+const port = flag.schema(z.coerce.number().int().min(1), 'port');
+const tags = flag.schema(z.enum(['alpha', 'beta']));
+
+command({
+	flags: {
+		port: port({ description: 'Port' }).default(80),
+		tag: tags({ description: 'Tag' }).multiple(),
+	},
+	run: ({ flags }) => {}, // { port: number; tag: ('alpha' | 'beta')[] | undefined }
+});
+```
+
+- **Types** come from the schema's output.
+- **Values arrive as strings**, so schemas for other types must coerce (`z.coerce.number()`, `z.stringbool()`). A schema whose input can't be a string, such as `z.number()`, `z.boolean()` or `z.date()`, is a type error. Coercing schemas (input `unknown`), enums and string schemas are accepted, whether written inline or declared beforehand.
+- **Errors** use the schema's issue messages, e.g. `Invalid value '0' for --port: Too small: expected number to be >=1`.
+- **No `undefined` outputs.** A schema that can output `undefined` (such as `.optional()`) is a type error, because `undefined` already means "not provided". Use `.default()` on the flag instead.
+- **No dependency:** jinju has no dependency on any schema library or on `@standard-schema/spec`. It ships a compatible `StandardSchemaV1` type.
+
 ### Args
 
 Args are a tuple (`args: [src, dest]`) and `run` receives a typed tuple. They use the same creators and modifiers as flags (except switches and `alias`) and are optional by default. At most one arg can be `.multiple()`. Args before it fill from the left, args after it fill from the right, and it takes the middle. For example, `[src.multiple().required(), dest.required()]` behaves like `cp`. When values are scarce, required args are filled first.

@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, test } from 'vitest';
+import { z } from 'zod';
 
 import { Arg, arg } from './arg';
 import { toParam } from './param';
@@ -61,4 +62,17 @@ test('literal names are kept in the type', () => {
 	expectTypeOf(choice).toEqualTypeOf<Arg<'a' | 'b' | undefined, 'a' | 'b', 'env'>>();
 	const custom = arg.custom((input) => input.length)({ name: 'size', description: 'd' });
 	expectTypeOf(custom).toEqualTypeOf<Arg<number | undefined, number, 'size'>>();
+});
+
+test('schema', async () => {
+	const target = arg.schema(z.url(), 'url')({ name: 'target', description: 'd' }).required();
+	expectTypeOf(target).toEqualTypeOf<Arg<string, string, 'target'>>();
+	const param = toParam(target);
+	expect(await param.resolve(['https://a.b'], '<target>')).toEqual({
+		ok: true,
+		value: 'https://a.b',
+	});
+	expect(await param.resolve(['nope'], '<target>')).toMatchObject({ ok: false });
+	// @ts-expect-error command-line values are strings; use z.coerce.date()
+	arg.schema(z.date());
 });

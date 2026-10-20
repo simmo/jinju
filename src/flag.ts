@@ -7,6 +7,12 @@ import {
 	type Toggle,
 } from './param';
 import {
+	type CheckSchemaInput,
+	type SchemaOutput,
+	type StandardSchemaV1,
+	schemaParser,
+} from './schema';
+import {
 	type NumberOptions,
 	type Parse,
 	parseBoolean,
@@ -122,6 +128,17 @@ export const flag = {
 		parseCount,
 	),
 	custom,
+	/**
+	 * Uses a Standard Schema (zod, valibot, arktype, …) as the parser:
+	 * `flag.schema(emailSchema, 'email')({ description: 'Email' })`. Values arrive as
+	 * strings, so the schema must accept a string; non-string schemas should coerce.
+	 */
+	schema: <S extends StandardSchemaV1<unknown, Defined>>(
+		schema: S & CheckSchemaInput<S>,
+		valueName = 'value',
+	) =>
+		// `S` produces `SchemaOutput<S>` by definition; TypeScript can't see that for generic `S`.
+		custom(schemaParser(schema as StandardSchemaV1<unknown, SchemaOutput<S>>), valueName),
 	/** Path to a directory, resolved to an absolute path. */
 	directory: custom(parseDirectory, 'directory'),
 	email: custom(parseEmail, 'email'),
