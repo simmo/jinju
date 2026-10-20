@@ -4,7 +4,16 @@ import { join, resolve } from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
-import { parseDirectory, parseEmail, parseFile, parseNumber, parseString, parseUrl } from './value';
+import {
+	parseBoolean,
+	parseCount,
+	parseDirectory,
+	parseEmail,
+	parseFile,
+	parseNumber,
+	parseString,
+	parseUrl,
+} from './value';
 
 describe('string', () => {
 	test('passes through', () => {
@@ -43,6 +52,31 @@ test('url', () => {
 test('email', () => {
 	expect(parseEmail('me@example.com', {})).toBe('me@example.com');
 	expect(() => parseEmail('me@example', {})).toThrow('valid email');
+});
+
+describe('boolean', () => {
+	test.each(['true', '1', 'yes', 'on', ' TRUE ', 'Yes'])('%j is true', (input) => {
+		expect(parseBoolean(input, {})).toBe(true);
+	});
+
+	test.each(['false', '0', 'no', 'off', 'OFF'])('%j is false', (input) => {
+		expect(parseBoolean(input, {})).toBe(false);
+	});
+
+	test.each(['', 'maybe', '2'])('rejects %j', (input) => {
+		expect(() => parseBoolean(input, {})).toThrow('must be true or false');
+	});
+});
+
+describe('count', () => {
+	test('parses whole numbers', () => {
+		expect(parseCount('0', {})).toBe(0);
+		expect(parseCount(' 3 ', {})).toBe(3);
+	});
+
+	test.each(['', '-1', '1.5', 'two'])('rejects %j', (input) => {
+		expect(() => parseCount(input, {})).toThrow('must be a whole number');
+	});
 });
 
 describe('paths', async () => {

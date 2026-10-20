@@ -257,6 +257,21 @@ describe('helpData', () => {
 		expect(data.flags[5]).toMatchObject({ key: 'secret', hidden: true });
 	});
 
+	test('flags include their env variable', () => {
+		const withEnv = helpData({
+			program,
+			path: [],
+			subcommands: [],
+			command: command({
+				description: 'x',
+				flags: { token: flag.string({ description: 'Token', env: 'API_TOKEN' }) },
+				run: () => {},
+			}),
+		});
+		expect(withEnv.flags[0]).toMatchObject({ key: 'token', env: 'API_TOKEN' });
+		expect(data.flags[0]).not.toHaveProperty('env');
+	});
+
 	test('shared flags at a group level are from a scope', () => {
 		const group = helpData({
 			program,
@@ -348,6 +363,16 @@ describe('HelpTemplate', () => {
 			}
 		}
 		expect(help(context, new Names())).toBe('alpha zeta\n');
+	});
+
+	test('tags include env, after the default', () => {
+		const port = flag.number({ description: 'Port', env: 'PORT' }).default(80);
+		const debug = flag.boolean({ description: 'Debug', env: 'DEBUG' });
+		const page = help({
+			command: command({ description: 'x', flags: { port, debug }, run: () => {} }),
+		});
+		expect(page).toContain('--port <number>  Port (default: 80; env: PORT)');
+		expect(page).toContain('--debug          Debug (env: DEBUG)');
 	});
 
 	test('methods can be used on their own', () => {

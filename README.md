@@ -50,7 +50,15 @@ await jinju({
 
 `flag.boolean()` (`--x` / `--no-x`, defaults to `false`) and `flag.count()` (`-vvv` → `3`) are switches that never take a value.
 
-All flags share `{description, alias?, hidden?}`. The object key is the flag name, converted from camelCase to kebab-case (`dryRun` → `--dry-run`).
+All flags share `{description, alias?, hidden?, env?}`. The object key is the flag name, converted from camelCase to kebab-case (`dryRun` → `--dry-run`).
+
+`env` names an environment variable to read when the flag isn't given: `flag.string({ description: 'API token', env: 'API_TOKEN' })`.
+
+- **Priority:** the command line wins, then the variable, then the default. A value from the variable satisfies `.required()`.
+- **Parsing:** values are parsed like command-line values, so `flag.number({ env: 'PORT' })` validates the number. Errors name the source: `Invalid value 'abc' for --port (from $PORT): must be a number`.
+- **Switches:** `flag.boolean` accepts `true`/`false`, `1`/`0`, `yes`/`no` and `on`/`off`; `flag.count` accepts a whole number (`VERBOSE=2`).
+- **Empty values** (`API_TOKEN=`) count as unset. A `.multiple()` flag gets a single value from its variable.
+- **Help** shows the variable, e.g. `(env: API_TOKEN)`.
 
 | Modifier               | Effect                                                                            |
 | ---------------------- | --------------------------------------------------------------------------------- |
@@ -132,7 +140,7 @@ jinju({ commands: { list, ':project': { deploy } } });
 
 ### Program
 
-`jinju({name?, version?, description?, commands, strict?, help?, error?, stdout?, stderr?, exit?})`
+`jinju({name?, version?, description?, commands, strict?, help?, error?, env?, stdout?, stderr?, exit?})`
 
 - Nest objects for subcommands. `$` is the command for that level. A `:name` key is a dynamic segment (see below).
 - Routing takes the longest matching command path. A flag not inherited by any command below that point, or `--`, ends the path.
@@ -140,6 +148,7 @@ jinju({ commands: { list, ':project': { deploy } } });
 - `--help`/`-h` and `--version` are built in. Use `packageVersion(import.meta.url)` to read `version` from your CLI's nearest `package.json`.
 - Errors are collected and printed with a usage hint. Exit code `1`.
 - `run()` resolves to the exit code and sets `process.exitCode`. Override this with `exit`.
+- Flags' `env` variables are read from `process.env`. Pass `env` to supply them yourself, e.g. in tests.
 
 ### Help
 

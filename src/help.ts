@@ -71,6 +71,8 @@ export interface HelpFlag extends HelpParam {
 	alias?: string;
 	/** Switches (`flag.boolean`, `flag.count`) never take a value. */
 	kind: 'flag' | 'switch';
+	/** Environment variable read when the flag isn't given. */
+	env?: string;
 	/** Defined on the command itself, inherited from a scope, or built in (`--help`, `--version`). */
 	source: 'command' | 'scope' | 'builtin';
 	hidden: boolean;
@@ -179,6 +181,7 @@ export const helpData = (context: HelpContext): HelpData => {
 				name: kebabCase(key),
 				...(alias === undefined ? {} : { alias }),
 				kind: param.kind === 'switch' ? ('switch' as const) : ('flag' as const),
+				...(param.options.env === undefined ? {} : { env: param.options.env }),
 			};
 			const source =
 				key in builtins
@@ -302,6 +305,7 @@ export class HelpTemplate {
 		if (param.choices) tags.push(`choices: ${param.choices.join(', ')}`);
 		const isSwitch = 'kind' in param && param.kind === 'switch';
 		if (param.hasDefault && !isSwitch) tags.push(`default: ${this.formatValue(param.default)}`);
+		if ('env' in param && param.env !== undefined) tags.push(`env: ${param.env}`);
 		return tags.length > 0 ? ` (${tags.join('; ')})` : '';
 	}
 

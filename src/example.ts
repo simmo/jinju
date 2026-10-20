@@ -2,7 +2,9 @@ import { arg, flag, jinju, packageVersion, scope } from './index';
 
 // Shared by every command: accepted before or after the command name.
 const app = scope({
-	flags: { verbose: flag.count({ alias: 'v', description: 'Increase verbosity' }) },
+	flags: {
+		verbose: flag.count({ alias: 'v', description: 'Increase verbosity', env: 'VERBOSE' }),
+	},
 });
 
 // A nested scope: these commands all start with a <files> arg.

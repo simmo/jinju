@@ -85,3 +85,20 @@ const createPathParser =
 export const parseDirectory = createPathParser('directory');
 
 export const parseFile = createPathParser('file');
+
+const TRUE = new Set(['true', '1', 'yes', 'on']);
+const FALSE = new Set(['false', '0', 'no', 'off']);
+
+/** Parses a boolean switch's value from text, e.g. an environment variable. */
+export const parseBoolean: Parse<boolean> = (input) => {
+	const value = input.trim().toLowerCase();
+	if (TRUE.has(value)) return true;
+	if (FALSE.has(value)) return false;
+	throw new Error('must be true or false');
+};
+
+/** Parses a count switch's value from text, e.g. `VERBOSE=2`. */
+export const parseCount: Parse<number> = (input) => {
+	if (!/^\d+$/.test(input.trim())) throw new Error('must be a whole number');
+	return Number(input);
+};

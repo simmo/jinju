@@ -113,6 +113,83 @@ describe('parse', () => {
 	});
 });
 
+describe('env', () => {
+	const deploy = command({
+		description: 'Deploy',
+		flags: {
+			token: flag.string({ description: 'Token', env: 'API_TOKEN' }).required(),
+			port: flag.number({ description: 'Port', env: 'PORT' }).default(80),
+			tags: flag.string({ description: 'Tags', env: 'TAGS' }).multiple(),
+			debug: flag.boolean({ description: 'Debug', env: 'DEBUG' }),
+			verbose: flag.count({ alias: 'v', description: 'Verbose', env: 'VERBOSE' }),
+		},
+		run: noop,
+	});
+	const parse = (argv: string[], env: Record<string, string | undefined>) =>
+		deploy.parse(argv, { env });
+
+	test('is used when a flag is not given', async () => {
+		const result = await parse([], {
+			API_TOKEN: 'abc',
+			PORT: '8080',
+			TAGS: 'a',
+			DEBUG: 'yes',
+			VERBOSE: '2',
+		});
+		expect(result.ok && result.value.flags).toEqual({
+			token: 'abc',
+			port: 8080,
+			tags: ['a'],
+			debug: true,
+			verbose: 2,
+		});
+	});
+
+	test('argv takes priority, and the default applies when unset', async () => {
+		const result = await parse(['--token', 'cli', '--debug=false', '-v'], {
+			API_TOKEN: 'env',
+			DEBUG: '1',
+			VERBOSE: '5',
+		});
+		expect(result.ok && result.value.flags).toMatchObject({
+			token: 'cli',
+			port: 80,
+			debug: false,
+			verbose: 1,
+		});
+	});
+
+	test('empty values count as unset', async () => {
+		const result = await parse([], { API_TOKEN: '', PORT: '' });
+		expect(result.ok || result.errors.map((error) => error.message)).toEqual([
+			'Missing required --token',
+		]);
+	});
+
+	test('invalid values name the variable', async () => {
+		const result = await parse([], { API_TOKEN: 'x', PORT: 'eighty', DEBUG: 'maybe' });
+		expect(result.ok || result.errors.map((error) => error.message).sort()).toEqual([
+			"Invalid value 'eighty' for --port (from $PORT): must be a number",
+			"Invalid value 'maybe' for --debug (from $DEBUG): must be true or false",
+		]);
+	});
+
+	test('defaults to process.env', async () => {
+		process.env.JINJU_TEST_TOKEN = 'from-process';
+		try {
+			const cmd = command({
+				description: 'x',
+				flags: { token: flag.string({ description: 'Token', env: 'JINJU_TEST_TOKEN' }) },
+				run: noop,
+			});
+			const result = await cmd.parse([]);
+			expect(result.ok && result.value.flags.token).toBe('from-process');
+		} finally {
+			delete process.env.JINJU_TEST_TOKEN;
+		}
+	});
+});
+
 describe('configuration errors', () => {
 	test('flag name and alias collisions', () => {
 		expect(() =>

@@ -146,6 +146,8 @@ export interface ParseOptions {
 	strict?: boolean;
 	/** Positional values captured before the command name (dynamic segments), placed first. */
 	leading?: readonly string[];
+	/** Where flags' `env` variables are read from. Defaults to `process.env`. */
+	env?: Readonly<Record<string, string | undefined>>;
 }
 
 export interface Parsed {
@@ -226,14 +228,22 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 			}
 		}
 
+		const env = options.env ?? process.env;
 		const flags: Record<string, unknown> = {};
 		const flagResults = Object.keys(this.flags).map(async (key) => {
 			const { label, param } = index.entries.get(key)!;
-			if (param instanceof Switch) {
+			const given = param instanceof Switch ? occurrences.has(key) : flagInputs.has(key);
+			const name = param.options.env;
+			const fromEnv = given || name === undefined ? undefined : env[name] || undefined;
+
+			if (fromEnv === undefined && param instanceof Switch) {
 				flags[key] = param.resolveSwitch(occurrences.get(key) ?? []);
 				return;
 			}
-			const result = await param.resolve(flagInputs.get(key) ?? [], label);
+			const result =
+				fromEnv === undefined
+					? await param.resolve(flagInputs.get(key) ?? [], label)
+					: await param.resolve([fromEnv], `${label} (from $${name})`);
 			if (result.ok) flags[key] = result.value;
 			else errors.push(...result.errors);
 		});

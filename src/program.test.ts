@@ -719,3 +719,42 @@ describe('edge cases', () => {
 		expect(seen).toEqual(['src']);
 	});
 });
+
+describe('env', () => {
+	test('flags read the program env, including scope flags', async () => {
+		const seen: unknown[] = [];
+		const authed = scope({ flags: { token: flag.string({ ...d, env: 'API_TOKEN' }).required() } });
+		const { output, program } = setup({
+			env: { API_TOKEN: 'secret' },
+			commands: {
+				deploy: authed.command({
+					description: 'x',
+					run: ({ flags }) => void seen.push(flags.token),
+				}),
+			},
+		});
+		expect(await program.run(['deploy'])).toBe(0);
+		expect(seen).toEqual(['secret']);
+
+		const { output: out, program: empty } = setup({
+			env: {},
+			commands: { deploy: authed.command({ description: 'x', run: () => {} }) },
+		});
+		expect(await empty.run(['deploy'])).toBe(1);
+		expect(out.stderr).toContain('Missing required --token');
+		expect(output.stderr).toBe('');
+	});
+
+	test('help shows the variable', () => {
+		const { program } = setup({
+			commands: {
+				x: command({
+					description: 'x',
+					flags: { port: flag.number({ description: 'Port', env: 'PORT' }) },
+					run: () => {},
+				}),
+			},
+		});
+		expect(program.help(['x'])).toContain('--port <number>  Port (env: PORT)');
+	});
+});

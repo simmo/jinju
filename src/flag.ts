@@ -9,6 +9,8 @@ import {
 import {
 	type NumberOptions,
 	type Parse,
+	parseBoolean,
+	parseCount,
 	parseDirectory,
 	parseEmail,
 	parseFile,
@@ -25,6 +27,11 @@ export interface FlagOptions {
 	alias?: string;
 	/** Hide from help. */
 	hidden?: boolean;
+	/**
+	 * Environment variable to read when the flag isn't given, e.g. `'API_TOKEN'`. Parsed
+	 * like a command-line value. Empty values count as unset. Priority: argv, env, default.
+	 */
+	env?: string;
 }
 
 /** A flag that takes a value: `--name value`, `--name=value`, `-n value`. */
@@ -90,14 +97,10 @@ const custom =
 		return new Flag<V | undefined, V>({ value, options, state });
 	};
 
-const toggle = <V>(valueName: string, initial: V, reduce: Toggle<V>) => {
+const toggle = <V>(valueName: string, initial: V, reduce: Toggle<V>, parse: Parse<V>) => {
 	return (options: FlagOptions): Switch<V> => {
-		const value = {
-			name: valueName,
-			parse: () => {
-				throw new Error('switches do not take a value');
-			},
-		};
+		// Switches don't take values on the command line; `parse` reads them from `env`.
+		const value = { name: valueName, parse: (input: string) => parse(input, {}) };
 		const state = { required: false, multiple: false, hasDefault: true };
 		return new Switch<V>({ value, options, state, defaultValue: initial, toggle: reduce });
 	};
@@ -105,10 +108,18 @@ const toggle = <V>(valueName: string, initial: V, reduce: Toggle<V>) => {
 
 export const flag = {
 	/** `--name` → `true`, `--no-name` → `false`. Defaults to `false`. */
-	boolean: toggle('boolean', false, (occurrences) => occurrences.reduce((_, on) => on)),
+	boolean: toggle(
+		'boolean',
+		false,
+		(occurrences) => occurrences.reduce((_, on) => on),
+		parseBoolean,
+	),
 	/** Counts occurrences: `-vvv` → `3`; `--no-name` resets to `0`. Defaults to `0`. */
-	count: toggle('count', 0, (occurrences) =>
-		occurrences.reduce((count, on) => (on ? count + 1 : 0), 0),
+	count: toggle(
+		'count',
+		0,
+		(occurrences) => occurrences.reduce((count, on) => (on ? count + 1 : 0), 0),
+		parseCount,
 	),
 	custom,
 	/** Path to a directory, resolved to an absolute path. */

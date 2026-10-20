@@ -28,6 +28,8 @@ export interface ProgramConfig<T extends CommandTree = CommandTree> {
 	commands: T & CheckTree<T>;
 	/** Reject unknown flags. Defaults to `true`. */
 	strict?: boolean;
+	/** Where flags' `env` variables are read from. Defaults to `process.env`. */
+	env?: Readonly<Record<string, string | undefined>>;
 	/** Renders help pages. Defaults to `new HelpTemplate()`; extend it to customise. */
 	help?: HelpTemplate;
 	/** Renders error output. Defaults to `new ErrorTemplate()`; extend it to customise. */
@@ -206,6 +208,7 @@ export class Program {
 			globals: this.#builtins,
 			leading: captured,
 			strict: this.#config.strict,
+			...(this.#config.env === undefined ? {} : { env: this.#config.env }),
 		});
 		if (!result.ok) return this.#fail(result.errors, match);
 

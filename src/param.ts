@@ -41,6 +41,7 @@ export interface ParamOptions {
 	hidden?: boolean;
 	name?: string;
 	choices?: readonly string[];
+	env?: string;
 }
 
 /**

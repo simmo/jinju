@@ -69,11 +69,17 @@ describe('switches', () => {
 		expect(base.resolveSwitch([])).toBe(false);
 	});
 
-	test('reject values', async () => {
-		expect(await parse(flag.boolean(d), 'x')).toMatchObject({
+	test('parse text values (used for `env`)', async () => {
+		expect(await parse(flag.boolean(d), 'yes')).toEqual({ ok: true, value: true });
+		expect(await parse(flag.count(d), '2')).toEqual({ ok: true, value: 2 });
+		expect(await parse(flag.boolean(d), 'maybe')).toMatchObject({
 			ok: false,
-			errors: [{ reason: 'switches do not take a value' }],
+			errors: [{ reason: 'must be true or false' }],
 		});
+	});
+
+	test('keep the env option', () => {
+		expect(toParam(flag.boolean({ ...d, env: 'DEBUG' })).options.env).toBe('DEBUG');
 	});
 });
 

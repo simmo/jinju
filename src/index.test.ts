@@ -222,6 +222,14 @@ describe('type exports', () => {
 		expectTypeOf<HelpArg['source']>().toEqualTypeOf<'command' | 'scope'>();
 		expectTypeOf(jinju.formatPath).parameter(0).toEqualTypeOf<readonly HelpPathPart[]>();
 		expectTypeOf<ProgramConfig['help']>().toEqualTypeOf<HelpTemplate | undefined>();
+		expectTypeOf<ProgramConfig['env']>().toEqualTypeOf<
+			Readonly<Record<string, string | undefined>> | undefined
+		>();
+		expectTypeOf<HelpFlag['env']>().toEqualTypeOf<string | undefined>();
+		expectTypeOf<FlagOptions['env']>().toEqualTypeOf<string | undefined>();
+		expectTypeOf<ParseOptions['env']>().toEqualTypeOf<
+			Readonly<Record<string, string | undefined>> | undefined
+		>();
 	});
 
 	test('error template types', () => {
