@@ -336,6 +336,21 @@ describe('help and version', () => {
 		expect(out.stdout).toContain('app db <command>');
 	});
 
+	test('strict: false also ignores unknown flags at a group without a command', async () => {
+		const migrate = command({ description: 'Migrate', run: () => {} });
+		const { output: strict, program: strictGroups } = setup({ commands: { db: { migrate } } });
+		expect(await strictGroups.run(['db', '--unknown'])).toBe(1);
+		expect(strict.stderr).toContain("Unknown flag '--unknown'");
+
+		const { output: loose, program: looseGroups } = setup({
+			strict: false,
+			commands: { db: { migrate } },
+		});
+		expect(await looseGroups.run(['db', '--unknown'])).toBe(1);
+		expect(loose.stderr).toBe('');
+		expect(loose.stdout).toContain('app db <command>');
+	});
+
 	test('a help template instance renders --help and help()', async () => {
 		const seen: string[][] = [];
 		class Custom extends HelpTemplate {
@@ -722,6 +737,27 @@ describe('edge cases', () => {
 			commands: { sync: { files: command({ description: 'x', run: () => {} }) } },
 		});
 		expect(() => program.help(['sync', 'nope'])).toThrow(new UnknownCommandError('nope'));
+	});
+
+	test('entries must be commands or objects of commands', () => {
+		const ok = command({ description: 'x', run: () => {} });
+		for (const [commands, at] of [
+			[{ sync: 'run' }, 'sync'],
+			[{ sync: null }, 'sync'],
+			[{ sync: 3 }, 'sync'],
+			[{ sync: [ok] }, 'sync'],
+			[{ ':project': null }, ':project'],
+			[{ db: { migrate: 'up' } }, 'db migrate'],
+		] as const) {
+			expect(() => jinju({ commands: commands as never })).toThrow(
+				new ConfigError(`'${at}' must be a command or an object of commands`),
+			);
+		}
+		for (const commands of [null, 'sync', [ok]]) {
+			expect(() => jinju({ commands: commands as never })).toThrow(
+				new ConfigError("'commands' must be an object of commands"),
+			);
+		}
 	});
 
 	test('$ must be a command', () => {

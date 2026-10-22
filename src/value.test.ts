@@ -99,6 +99,12 @@ describe('paths', async () => {
 
 	test('rejects empty input', async () => {
 		await expect(parseDirectory('', {})).rejects.toThrow('valid directory path');
+		await expect(parseFile('', {})).rejects.toThrow('valid file path');
+	});
+
+	test('rejects paths containing a NUL byte', async () => {
+		await expect(parseDirectory('some\0dir', {})).rejects.toThrow('must be a valid directory path');
+		await expect(parseFile('a\0.txt', {})).rejects.toThrow('must be a valid file path');
 	});
 
 	test('checks existence and kind', async () => {

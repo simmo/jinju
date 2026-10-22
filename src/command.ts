@@ -203,6 +203,7 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 		const flagInputs = new Map<string, string[]>();
 		const occurrences = new Map<string, boolean[]>();
 		const positionals: string[] = [...(options.leading ?? [])];
+		const given = new Set<string>();
 
 		for (const token of tokenize(argv, index)) {
 			if (token.type === 'arg') {
@@ -215,6 +216,8 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 			}
 
 			const { label, param } = index.entries.get(token.key)!;
+			// Given on the command line, even if invalid: the env fallback no longer applies.
+			given.add(token.key);
 			if (param.kind === 'switch') {
 				const on = switchState(token);
 				if (on === undefined) {
@@ -233,9 +236,8 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 		const flags: Record<string, unknown> = {};
 		const flagResults = Object.keys(this.flags).map(async (key) => {
 			const { label, param } = index.entries.get(key)!;
-			const given = param instanceof Switch ? occurrences.has(key) : flagInputs.has(key);
 			const name = param.options.env;
-			const fromEnv = given || name === undefined ? undefined : env[name] || undefined;
+			const fromEnv = given.has(key) || name === undefined ? undefined : env[name] || undefined;
 
 			if (fromEnv === undefined && param instanceof Switch) {
 				flags[key] = param.resolveSwitch(occurrences.get(key) ?? []);

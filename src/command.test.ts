@@ -186,6 +186,17 @@ describe('env', () => {
 		]);
 	});
 
+	test('a flag given on the command line never falls back to env, even if invalid', async () => {
+		const missing = await parse(['--token', 't', '--port'], { PORT: 'abc' });
+		expect(missing.ok || missing.errors.map((error) => error.message)).toEqual([
+			'--port requires a value',
+		]);
+		const invalid = await parse(['--token', 't', '--debug=maybe'], { DEBUG: '1' });
+		expect(invalid.ok || invalid.errors.map((error) => error.message)).toEqual([
+			"Invalid value 'maybe' for --debug: must be true or false",
+		]);
+	});
+
 	test('invalid values name the variable', async () => {
 		const result = await parse([], { API_TOKEN: 'x', PORT: 'eighty', DEBUG: 'maybe' });
 		expect(result.ok || result.errors.map((error) => error.message).sort()).toEqual([

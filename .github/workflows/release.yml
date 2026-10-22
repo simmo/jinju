@@ -46,18 +46,21 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_branch || github.ref }}
+          # Full history, so the tested commit can be compared with the branch.
+          fetch-depth: 0
 
-      # Release exactly the commit CI tested. release-it needs the branch (not a detached
-      # SHA) to push its release commit, so if main has moved on, skip: the newer commit's
-      # own CI run triggers its own release.
+      # Release only code CI tested. release-it needs the branch (not a detached SHA) to push
+      # its release commit, so compare instead. Generated files are ignored: CI's Generate job
+      # pushes badge updates (with GITHUB_TOKEN, so they never run CI themselves). Any other
+      # change since the tested commit came from a push with its own CI run, which releases it.
       - name: Check Commit
         id: commit
         if: github.event_name == 'workflow_run'
         run: |
-          if [ "$(git rev-parse HEAD)" = "${{ github.event.workflow_run.head_sha }}" ]; then
+          if git diff --quiet "${{ github.event.workflow_run.head_sha }}" HEAD -- . ':(exclude).github/badges'; then
             echo "current=true" >> "$GITHUB_OUTPUT"
           else
-            echo "main has moved on from ${{ github.event.workflow_run.head_sha }}; skipping."
+            echo "main has changed since ${{ github.event.workflow_run.head_sha }}; skipping."
             echo "current=false" >> "$GITHUB_OUTPUT"
           fi
 

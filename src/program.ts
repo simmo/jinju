@@ -109,6 +109,13 @@ const createNode = (path: HelpPathPart[], segments: string[], command?: Command)
 	shared: {},
 });
 
+/** A plain object of commands (not a command, `null`, an array or a primitive). */
+const isTree = (value: unknown): value is CommandTree =>
+	typeof value === 'object' &&
+	value !== null &&
+	!Array.isArray(value) &&
+	!(value instanceof Command);
+
 /** What a subcommand listing needs to know about a child node. */
 const summary = (node: Node) => ({
 	description: node.description,
@@ -203,7 +210,7 @@ export class Program {
 			const unknown = tokens.flatMap((token) =>
 				token.type === 'unknown' ? [new UnknownFlagError(token.raw)] : [],
 			);
-			if (unknown.length > 0) return this.#fail(unknown, match);
+			if (unknown.length > 0 && this.#config.strict !== false) return this.#fail(unknown, match);
 			const stray = tokens.find((token) => token.type === 'arg');
 			if (stray) return this.#fail([new UnknownCommandError(stray.value)], match);
 			return this.#print(this.#help(node), argv.length === 0 ? 0 : 1);
@@ -293,6 +300,8 @@ export class Program {
 	}
 
 	#buildTree(tree: CommandTree, path: HelpPathPart[], segments: string[]): Node {
+		// Types already require this; JavaScript callers get a clear error instead.
+		if (!isTree(tree)) throw new ConfigError("'commands' must be an object of commands");
 		const root = tree.$;
 		if (root !== undefined && !(root instanceof Command)) {
 			throw new ConfigError(`'$' must be a command (at '${formatPath(path) || 'root'}')`);
@@ -302,6 +311,10 @@ export class Program {
 
 		for (const [key, value] of Object.entries(tree)) {
 			if (key === '$') continue;
+			if (!(value instanceof Command) && !isTree(value)) {
+				const at = [formatPath(path), key].filter(Boolean).join(' ');
+				throw new ConfigError(`'${at}' must be a command or an object of commands`);
+			}
 			if (key.startsWith(':')) {
 				this.#addDynamic(node, key, value);
 				continue;
