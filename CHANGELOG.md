@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Flags: `flag.string` (with typed `choices`), `flag.number` (`min`, `max`, `integer`), `flag.url`, `flag.email`, `flag.directory` and `flag.file` (`exists`), and `flag.custom` for user-defined parsers, which may be async
 - Standard Schema support: `flag.schema(schema, name?)` and `arg.schema(schema, name?)` use any Standard Schema (zod, valibot, arktype, …) as the parser, with types from the schema's output. Schemas that can't receive a string (e.g. `z.number()`) are type errors. No new dependencies; a compatible `StandardSchemaV1` type is exported
 - Environment variable fallback: `env: 'API_TOKEN'` on any flag reads the variable when the flag isn't given (priority: argv, env, default), parsed and validated like a command-line value. `jinju({ env })` supplies the variables (defaults to `process.env`), and `HelpFlag.env` exposes them to help templates
-- Switches: `flag.boolean` (with `--no-x` negation) and `flag.count` (`-vvv`)
+- Switches: `flag.boolean` (with `--no-x` negation, and `--x=<value>` accepting `true`/`false`, `1`/`0`, `yes`/`no`, `on`/`off`) and `flag.count` (`-vvv`). Built-in `--help`/`--version` follow the same rules
 - Positional args: `arg.*` creators sharing the same parsers as flags, plus `arg.custom`
 - Immutable modifiers `.required()`, `.multiple()` and `.default()` on flags and args, with fully inferred types (`InferFlagType`, `InferArgType`, `InferFlags`, `InferArgs`). `Flag`, `Arg` and `Switch` are classes built on a shared abstract `Param` base. Every type used in a public signature is exported (e.g. `Param`, `Defined`, `ParseOptions`, `MergeFlags`, `CheckArgs`)
 - Positional allocation supporting one `.multiple()` arg in any position (e.g. `cp`-style `[...sources, dest]`)
@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build is ESM-only (`dist/index.js`, `dist/index.d.ts`), built with `tsdown` (rolldown), with `exports` fixed to match the build output
 - Requires Node `>=22.12`. CommonJS projects can `require('jinju')`, which loads the ESM build
 - Replaced `eslint` with `oxlint` and `prettier` with `oxfmt`
-- Updated `node` to `v24` (pinned to `24.22.0` in `.nvmrc`), `vitest` to `v4` and `typescript` to `v6`
+- Updated `node` to `v24` (pinned to `24.22.0` in `.nvmrc`), `vitest` to `v5` and `typescript` to `v6`
 - Updated GitHub Actions `actions/checkout` and `actions/setup-node` to `v7`
 - Releases publish to npm with Trusted Publishing (OIDC) instead of an `NPM_TOKEN` secret, and published versions now carry provenance. Prereleases run from `release.yml` after CI passes on `main`
 - Bump dependencies

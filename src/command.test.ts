@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, test } from 'vitest';
 
 import { arg } from './arg';
-import { allocate, command, scope } from './command';
+import { allocate, command, scope, switchState } from './command';
 import { ConfigError } from './errors';
 import { flag } from './flag';
 import { toParam } from './param';
@@ -75,6 +75,16 @@ describe('parse', () => {
 		expect(off.ok && off.value.flags.dryRun).toBe(false);
 		const on = await sync.parse(['a', '--dry-run=true']);
 		expect(on.ok && on.value.flags.dryRun).toBe(true);
+		for (const value of ['yes', '1', 'on', 'TRUE']) {
+			const result = await sync.parse(['a', `--dry-run=${value}`]);
+			expect(result.ok && result.value.flags.dryRun).toBe(true);
+		}
+		for (const value of ['no', '0', 'off']) {
+			const result = await sync.parse(['a', `--dry-run=${value}`]);
+			expect(result.ok && result.value.flags.dryRun).toBe(false);
+		}
+		const negated = await sync.parse(['a', '--no-dry-run=true']);
+		expect(negated.ok && negated.value.flags.dryRun).toBe(false);
 		const invalid = await sync.parse(['a', '--dry-run=maybe']);
 		expect(invalid.ok || invalid.errors[0]!.message).toBe(
 			"Invalid value 'maybe' for --dry-run: must be true or false",
@@ -111,6 +121,16 @@ describe('parse', () => {
 		const result = await sync.parse(['a', '--quiet'], { globals: { quiet: flag.boolean(d) } });
 		expect(result.ok && result.value.flags).toEqual({ dryRun: false, tag: undefined, verbose: 0 });
 	});
+});
+
+test('switchState', () => {
+	expect(switchState({})).toBe(true);
+	expect(switchState({ negated: true })).toBe(false);
+	expect(switchState({ value: 'yes' })).toBe(true);
+	expect(switchState({ value: 'off' })).toBe(false);
+	expect(switchState({ value: 'true', negated: true })).toBe(false);
+	expect(switchState({ value: 'false', negated: true })).toBe(true);
+	expect(switchState({ value: 'maybe' })).toBeUndefined();
 });
 
 describe('env', () => {

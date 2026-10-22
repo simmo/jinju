@@ -12,6 +12,7 @@ import { type FlagRecord, Switch } from './flag';
 import type { CheckArgs, InferArgs, InferFlags, MergeFlags } from './infer';
 import { type Param, type Result, toParam } from './param';
 import { type FlagLookup, type FlagSpec, tokenize } from './tokenize';
+import { toBoolean } from './value';
 
 export interface RunContext<F extends FlagRecord, A extends ArgList> {
 	flags: InferFlags<F>;
@@ -215,7 +216,7 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 
 			const { label, param } = index.entries.get(token.key)!;
 			if (param.kind === 'switch') {
-				const on = token.value === undefined ? !token.negated : parseToggle(token.value);
+				const on = switchState(token);
 				if (on === undefined) {
 					errors.push(new InvalidValueError(label, token.value!, 'must be true or false'));
 				} else {
@@ -268,8 +269,16 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 	}
 }
 
-const parseToggle = (value: string): boolean | undefined =>
-	value === 'true' ? true : value === 'false' ? false : undefined;
+/**
+ * What a switch token sets: `--x` → `true`, `--no-x` → `false`, `--x=<value>` → the value
+ * (`true`/`1`/`yes`/`on` or `false`/`0`/`no`/`off`), inverted for `--no-x=<value>`.
+ * `undefined` when the value isn't a boolean.
+ */
+export const switchState = (token: { value?: string; negated?: boolean }): boolean | undefined => {
+	if (token.value === undefined) return !token.negated;
+	const on = toBoolean(token.value);
+	return on === undefined ? undefined : on !== Boolean(token.negated);
+};
 
 export interface ScopeConfig<F extends FlagRecord, A extends ArgList, Prefix extends ArgList = []> {
 	/** Flags every command in the scope declares. Accepted before the command name. */

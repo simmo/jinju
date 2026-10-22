@@ -48,7 +48,7 @@ await jinju({
 
 `flag.string({choices?})`, `flag.number({min?, max?, integer?})`, `flag.url()`, `flag.email()`, `flag.directory({exists?})`, `flag.file({exists?})` and `flag.custom(parse)` take a value (`--name value`, `--name=value`, `-n value`, `-nvalue`). Paths resolve to absolute paths.
 
-`flag.boolean()` (`--x` / `--no-x`, defaults to `false`) and `flag.count()` (`-vvv` → `3`) are switches that never take a value.
+`flag.boolean()` (`--x` / `--no-x`, defaults to `false`) and `flag.count()` (`-vvv` → `3`) are switches: they don't consume the next argument. A switch can be set explicitly with `--x=<value>`, using `true`/`false`, `1`/`0`, `yes`/`no` or `on`/`off` (`--no-x=<value>` inverts it). The built-in `--help` and `--version` follow the same rules, so `--help=false` doesn't show help.
 
 All flags share `{description, alias?, hidden?, env?}`. The object key is the flag name, converted from camelCase to kebab-case (`dryRun` → `--dry-run`).
 
@@ -79,6 +79,7 @@ Custom types: `flag.custom((input, options) => value, 'name')` returns a creator
 Any [Standard Schema](https://standardschema.dev) (zod, valibot, arktype, …) can be used as a parser with `flag.schema(schema, name?)` or `arg.schema(schema, name?)`. Both return a creator, like `custom`:
 
 ```ts
+import { command, flag } from 'jinju';
 import { z } from 'zod';
 
 const port = flag.schema(z.coerce.number().int().min(1), 'port');

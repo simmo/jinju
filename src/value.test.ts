@@ -13,6 +13,7 @@ import {
 	parseNumber,
 	parseString,
 	parseUrl,
+	toBoolean,
 } from './value';
 
 describe('string', () => {
@@ -66,6 +67,12 @@ describe('boolean', () => {
 	test.each(['', 'maybe', '2'])('rejects %j', (input) => {
 		expect(() => parseBoolean(input, {})).toThrow('must be true or false');
 	});
+});
+
+test('toBoolean', () => {
+	expect(['true', '1', 'YES', ' on '].map(toBoolean)).toEqual([true, true, true, true]);
+	expect(['false', '0', 'No', 'OFF'].map(toBoolean)).toEqual([false, false, false, false]);
+	expect(['', 'maybe', '2'].map(toBoolean)).toEqual([undefined, undefined, undefined]);
 });
 
 describe('count', () => {

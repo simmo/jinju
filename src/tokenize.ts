@@ -14,7 +14,8 @@ export type Token =
 	| { type: 'unknown'; raw: string }
 	| { type: 'arg'; value: string };
 
-const isNegativeNumber = (arg: string) => /^-\d/.test(arg);
+/** `-5`, `-1.5`, `-.5`: values rather than flags. */
+const isNegativeNumber = (arg: string) => /^-\.?\d/.test(arg);
 
 /** Whether `arg` can be consumed as the value of a preceding flag (`--name value`). */
 const isValue = (arg: string | undefined): arg is string =>

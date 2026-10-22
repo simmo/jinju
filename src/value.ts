@@ -89,12 +89,17 @@ export const parseFile = createPathParser('file');
 const TRUE = new Set(['true', '1', 'yes', 'on']);
 const FALSE = new Set(['false', '0', 'no', 'off']);
 
+/** `true`/`1`/`yes`/`on` → `true`, `false`/`0`/`no`/`off` → `false` (any case), else `undefined`. */
+export const toBoolean = (input: string): boolean | undefined => {
+	const value = input.trim().toLowerCase();
+	return TRUE.has(value) ? true : FALSE.has(value) ? false : undefined;
+};
+
 /** Parses a boolean switch's value from text, e.g. an environment variable. */
 export const parseBoolean: Parse<boolean> = (input) => {
-	const value = input.trim().toLowerCase();
-	if (TRUE.has(value)) return true;
-	if (FALSE.has(value)) return false;
-	throw new Error('must be true or false');
+	const value = toBoolean(input);
+	if (value === undefined) throw new Error('must be true or false');
+	return value;
 };
 
 /** Parses a count switch's value from text, e.g. `VERBOSE=2`. */

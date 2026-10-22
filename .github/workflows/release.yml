@@ -47,13 +47,30 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_branch || github.ref }}
 
+      # Release exactly the commit CI tested. release-it needs the branch (not a detached
+      # SHA) to push its release commit, so if main has moved on, skip: the newer commit's
+      # own CI run triggers its own release.
+      - name: Check Commit
+        id: commit
+        if: github.event_name == 'workflow_run'
+        run: |
+          if [ "$(git rev-parse HEAD)" = "${{ github.event.workflow_run.head_sha }}" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "main has moved on from ${{ github.event.workflow_run.head_sha }}; skipping."
+            echo "current=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup
+        if: steps.commit.outputs.current != 'false'
         uses: ./.github/actions/setup
 
       - name: Build
+        if: steps.commit.outputs.current != 'false'
         run: npm run build
 
       - name: Release
+        if: steps.commit.outputs.current != 'false'
         continue-on-error: ${{ env.RELEASE == 'prerelease' }}
         run: npm run release -- ${{ env.RELEASE }} --ci ${{ contains(fromJSON('["premajor", "preminor", "prepatch", "prerelease"]'), env.RELEASE) && '--preRelease=beta --plugins.@release-it/keep-a-changelog.keepUnreleased' || '' }} --dry-run=${{ inputs.dry-run || false }}
         env:

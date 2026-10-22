@@ -299,6 +299,34 @@ describe('help and version', () => {
 		expect(output.stdout).toBe('1.2.3\n');
 	});
 
+	test('built-in switches follow the boolean switch rules', async () => {
+		const ran: string[] = [];
+		const { output: out, program: builtins } = setup({
+			version: '1.2.3',
+			commands: { go: command({ description: 'Go', run: () => void ran.push('go') }) },
+		});
+		for (const argv of [
+			['go', '--help=false'],
+			['go', '--version=false'],
+			['go', '--no-help'],
+			['go', '--help', '--help=no'],
+		]) {
+			expect(await builtins.run(argv)).toBe(0);
+		}
+		expect(ran).toEqual(['go', 'go', 'go', 'go']);
+		expect(out.stdout).toBe('');
+
+		expect(await builtins.run(['go', '--help=yes'])).toBe(0);
+		expect(out.stdout).toContain('Usage:');
+		out.stdout = '';
+		expect(await builtins.run(['go', '--version=1'])).toBe(0);
+		expect(out.stdout).toBe('1.2.3\n');
+
+		expect(await builtins.run(['go', '--help=maybe'])).toBe(1);
+		expect(out.stderr).toContain("Invalid value 'maybe' for --help: must be true or false");
+		expect(ran).toEqual(['go', 'go', 'go', 'go']);
+	});
+
 	test('a group without a command shows help', async () => {
 		const { output: out, program: groups } = setup({
 			commands: { db: { migrate: command({ description: 'Migrate', run: () => {} }) } },

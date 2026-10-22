@@ -56,6 +56,14 @@ test('negative numbers and dash are values', () => {
 	]);
 });
 
+test('negative numbers without a leading digit are values', () => {
+	expect(run('--name', '-.5', '-.25')).toEqual([
+		{ type: 'flag', key: 'name', raw: '--name', value: '-.5' },
+		{ type: 'arg', value: '-.25' },
+	]);
+	expect(run('-n', '-.5')).toEqual([{ type: 'flag', key: 'name', raw: '-n', value: '-.5' }]);
+});
+
 test('-- ends flag parsing', () => {
 	expect(run('a', '--', '--name', '-v')).toEqual([
 		{ type: 'arg', value: 'a' },

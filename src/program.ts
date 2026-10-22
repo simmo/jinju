@@ -1,7 +1,7 @@
 import { basename, extname } from 'node:path';
 
 import { kebabCase } from './case';
-import { type AnyCommand, Command, indexFlags } from './command';
+import { type AnyCommand, Command, indexFlags, switchState } from './command';
 import { ErrorTemplate } from './error-template';
 import { ConfigError, JinjuError, UnknownCommandError, UnknownFlagError } from './errors';
 import { flag, type FlagRecord } from './flag';
@@ -186,8 +186,13 @@ export class Program {
 			long: (name) => index.long(name) ?? node.lookup.long(name),
 			short: (char) => index.short(char) ?? node.lookup.short(char),
 		});
+		// Built-in switches follow the same rules as any boolean switch (last occurrence wins).
 		const has = (key: string) =>
-			tokens.some((token) => token.type === 'flag' && token.key === key && !token.negated);
+			tokens
+				.flatMap((token) =>
+					token.type === 'flag' && token.key === key ? [switchState(token)] : [],
+				)
+				.at(-1) === true;
 
 		if (has('help')) return this.#print(this.#help(node), 0);
 		if (this.#config.version !== undefined && has('version')) {
