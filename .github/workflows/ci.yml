@@ -94,6 +94,9 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
 
+      # Pushed with GITHUB_TOKEN, so this commit never triggers CI itself ([skip ci] only
+      # matters if that changes). Release still runs for the tested commit: its guard
+      # ignores changes under .github/badges (see release.yml).
       - name: Commit
         if: steps.check_changes.outputs.has_changes == 'true'
         run: |
