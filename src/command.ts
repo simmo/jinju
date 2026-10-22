@@ -119,9 +119,10 @@ export const allocate = (params: readonly Param[], values: readonly string[]) =>
 		takes.add(index);
 		spare--;
 	}
-	// Too few values even for required args: drop the right-most claims.
+	// Too few values even for required args: drop the right-most claims, keeping the
+	// value a required multiple arg needs (so `cp a` reports the missing destination).
 	for (const index of fixed.toReversed()) {
-		if (takes.size <= values.length) break;
+		if (takes.size + minVariadic <= values.length) break;
 		takes.delete(index);
 	}
 
@@ -141,7 +142,10 @@ export const allocate = (params: readonly Param[], values: readonly string[]) =>
 };
 
 export interface ParseOptions {
-	/** Extra flags parsed alongside the command's own (e.g. program globals). */
+	/**
+	 * Extra flags parsed and validated alongside the command's own (e.g. program built-ins).
+	 * Their values aren't included in the result.
+	 */
 	globals?: FlagRecord;
 	/** Reject unknown flags. Defaults to `true`. */
 	strict?: boolean;
@@ -234,21 +238,22 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 
 		const env = options.env ?? process.env;
 		const flags: Record<string, unknown> = {};
-		const flagResults = Object.keys(this.flags).map(async (key) => {
-			const { label, param } = index.entries.get(key)!;
+		// Every accepted flag (own and `globals`) is validated; only the command's own are returned.
+		const flagResults = [...index.entries].map(async ([key, { label, param }]) => {
+			const own = Object.hasOwn(this.flags, key);
 			const name = param.options.env;
 			const fromEnv = given.has(key) || name === undefined ? undefined : env[name] || undefined;
 
 			if (fromEnv === undefined && param instanceof Switch) {
-				flags[key] = param.resolveSwitch(occurrences.get(key) ?? []);
+				if (own) flags[key] = param.resolveSwitch(occurrences.get(key) ?? []);
 				return;
 			}
 			const result =
 				fromEnv === undefined
 					? await param.resolve(flagInputs.get(key) ?? [], label)
 					: await param.resolve([fromEnv], `${label} (from $${name})`);
-			if (result.ok) flags[key] = result.value;
-			else errors.push(...result.errors);
+			if (!result.ok) errors.push(...result.errors);
+			else if (own) flags[key] = result.value;
 		});
 
 		const { extra, inputs } = allocate(this.#params, positionals);

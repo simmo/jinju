@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from 'node:fs';
-import { dirname, join, parse } from 'node:path';
+import { dirname, join, parse, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { ConfigError } from './errors';
@@ -9,7 +9,10 @@ import { ConfigError } from './errors';
  * `import.meta.url`. Pass the result as `jinju({ version })`.
  */
 export const packageVersion = (from: string | URL): string => {
-	const path = typeof from === 'string' && !from.startsWith('file:') ? from : fileURLToPath(from);
+	// Absolute, so walking up always reaches the root (`dirname('.')` is `'.'`).
+	const path = resolve(
+		typeof from === 'string' && !from.startsWith('file:') ? from : fileURLToPath(from),
+	);
 	const start = statSync(path, { throwIfNoEntry: false })?.isDirectory() ? path : dirname(path);
 
 	for (let dir = start; ; dir = dirname(dir)) {

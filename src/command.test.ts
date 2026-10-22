@@ -35,6 +35,14 @@ describe('allocate', () => {
 		expect(allocate(middle, ['a', 'b']).inputs).toEqual([['a'], [], ['b']]);
 	});
 
+	test('a required multiple arg keeps its value when values run short', () => {
+		const cp = params(many.required(), req);
+		expect(allocate(cp, ['a']).inputs).toEqual([['a'], []]);
+		expect(allocate(cp, []).inputs).toEqual([[], []]);
+		const middle = params(req, many.required(), req);
+		expect(allocate(middle, ['a', 'b']).inputs).toEqual([['a'], ['b'], []]);
+	});
+
 	test('a required multiple arg reserves a value', () => {
 		const list = params(many.required(), opt);
 		expect(allocate(list, ['a']).inputs).toEqual([['a'], []]);
@@ -131,6 +139,52 @@ test('switchState', () => {
 	expect(switchState({ value: 'true', negated: true })).toBe(false);
 	expect(switchState({ value: 'false', negated: true })).toBe(true);
 	expect(switchState({ value: 'maybe' })).toBeUndefined();
+});
+
+test('cp-style commands report the missing destination', async () => {
+	const cp = command({
+		description: 'Copy',
+		args: [
+			arg.string({ name: 'src', description: 'd' }).multiple().required(),
+			arg.string({ name: 'dest', description: 'd' }).required(),
+		],
+		run: noop,
+	});
+	const result = await cp.parse(['a']);
+	expect(result.ok || result.errors.map((error) => error.message)).toEqual([
+		'Missing required argument <dest>',
+	]);
+});
+
+describe('globals', () => {
+	const cmd = command({ description: 'x', flags: { own: flag.boolean(d) }, run: noop });
+	const globals = {
+		limit: flag.number({ ...d, env: 'LIMIT' }),
+		token: flag.string(d).required(),
+		quiet: flag.boolean(d),
+	};
+
+	test('are validated but not returned', async () => {
+		const invalid = await cmd.parse(['--limit', 'nope', '--token', 't'], { globals });
+		expect(invalid.ok || invalid.errors.map((error) => error.message)).toEqual([
+			"Invalid value 'nope' for --limit: must be a number",
+		]);
+		const missing = await cmd.parse([], { globals });
+		expect(missing.ok || missing.errors.map((error) => error.message)).toEqual([
+			'Missing required --token',
+		]);
+		const valid = await cmd.parse(['--limit', '5', '--token', 't', '--quiet', '--own'], {
+			globals,
+		});
+		expect(valid.ok && valid.value.flags).toEqual({ own: true });
+	});
+
+	test('read their env variables too', async () => {
+		const result = await cmd.parse(['--token', 't'], { globals, env: { LIMIT: 'lots' } });
+		expect(result.ok || result.errors.map((error) => error.message)).toEqual([
+			"Invalid value 'lots' for --limit (from $LIMIT): must be a number",
+		]);
+	});
 });
 
 describe('env', () => {

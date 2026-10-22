@@ -1,6 +1,6 @@
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { describe, expect, test } from 'vitest';
@@ -37,6 +37,15 @@ describe('packageVersion', async () => {
 
 	test('no package.json up to the root is an error', () => {
 		expect(() => packageVersion('/')).toThrow('No package.json found above /');
+	});
+
+	test('relative paths are resolved against the working directory', async () => {
+		expect(packageVersion('package.json')).toBe(packageVersion(import.meta.url));
+		const bare = await mkdtemp(join(tmpdir(), 'jinju-pkg-'));
+		const outside = relative(process.cwd(), join(bare, 'cli.js'));
+		expect(outside.startsWith('..')).toBe(true);
+		expect(() => packageVersion(outside)).toThrow('No package.json found above');
+		expect(() => packageVersion('.')).not.toThrow();
 	});
 
 	test('this package', () => {

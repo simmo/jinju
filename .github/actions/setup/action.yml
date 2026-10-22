@@ -1,5 +1,5 @@
 name: Setup
-description:
+description: Install Node.js (from .nvmrc unless node-version is given) and dependencies
 
 inputs:
   node-version:
