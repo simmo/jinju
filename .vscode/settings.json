@@ -2,6 +2,10 @@
 	"cSpell.words": [
 		"jinju",
 		"niobe",
+		"npmjs",
+		"nvmrc",
+		"oxfmt",
+		"oxlint",
 		"premajor",
 		"preminor",
 		"prepatch",
@@ -10,10 +14,9 @@
 		"yoctocolors"
 	],
 	"editor.codeActionsOnSave": {
-		"source.fixAll.eslint": "explicit"
+		"source.fixAll.oxc": "always"
 	},
-	"javascript.preferences.importModuleSpecifierEnding": "js",
-	"typescript.tsdk": "node_modules/typescript/lib",
-	"typescript.preferences.autoImportSpecifierExcludeRegexes": ["node:test"],
-	"typescript.preferences.importModuleSpecifierEnding": "js"
+	"editor.defaultFormatter": "oxc.oxc-vscode",
+	"editor.formatOnSave": true,
+	"js/ts.preferences.autoImportSpecifierExcludeRegexes": ["node:test"]
 }

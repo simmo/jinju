@@ -14,7 +14,7 @@ Once you've made your changes, please submit a pull request. In your pull reques
 - Any other information that you think is relevant to your pull request.
 - If your pull request is a work in progress, please mark it as a draft pull request.
 - Be sure to include an update to the `CHANGELOG.md` file. The format is based on the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) specification. Within the "Unreleased" section add one or many list items under the following sub headings:
-  - `Added`, `Added for new features.
+  - `Added` for new features.
   - `Changed` for changes in existing functionality.
   - `Deprecated` for soon-to-be removed features.
   - `Removed` for now removed features.
