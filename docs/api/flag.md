@@ -1,3 +1,7 @@
+---
+description: 'API reference for flag: every flag and switch creator, their options and the Flag modifiers.'
+---
+
 # flag
 
 Creators for flags and switches. See the [Flags guide](../guide/flags) for usage.

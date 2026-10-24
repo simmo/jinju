@@ -1,3 +1,7 @@
+---
+description: 'Named options such as --port 8080: value types, switches, modifiers (.required(), .multiple(), .default()), aliases and custom parsers.'
+---
+
 # Flags
 
 Flags are named options: `--port 8080`, `-v`, `--dry-run`. You create them with the `flag.*` creators and add them to a command (or [scope](./scopes)) under `flags`. The object key becomes the flag's name, converted from camelCase to kebab-case.

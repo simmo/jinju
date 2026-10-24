@@ -1,3 +1,7 @@
+---
+description: Share flags and args across several commands with scope(), with their types flowing through to each command.
+---
+
 # Scopes
 
 A scope groups the flags and args that several commands share. Commands created from a scope inherit them, and their types flow through to each command's `run`.

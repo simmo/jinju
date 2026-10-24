@@ -1,3 +1,7 @@
+---
+description: 'jinju() builds a program from a command tree: its options, nested commands, running it with argv and rendering help.'
+---
+
 # Program
 
 `jinju()` builds a program from a tree of commands. The program's methods then [run it](#running) or [render its help](#rendering-help).

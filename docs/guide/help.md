@@ -1,3 +1,7 @@
+---
+description: The --help pages generated from your definitions, and customising them by extending HelpTemplate.
+---
+
 # Help
 
 `--help` pages are generated from your definitions:

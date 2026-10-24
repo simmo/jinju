@@ -1,3 +1,7 @@
+---
+description: 'Read a value before the command name, like a route parameter: app my-site deploy, with :name keys in the command tree.'
+---
+
 # Dynamic segments
 
 A `:name` key in the command tree reads a value **before** the command name, like a route parameter. `app my-site deploy` can run `deploy` for the project `my-site`.

@@ -1,3 +1,7 @@
+---
+description: 'API reference for arg: every positional arg creator, their options and the Arg modifiers.'
+---
+
 # arg
 
 Creators for positional args. See the [Args guide](../guide/args) for usage.

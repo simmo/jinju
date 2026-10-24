@@ -57,8 +57,10 @@
 		"release-it": "^21.1.1",
 		"tsdown": "^0.23.1",
 		"tsx": "^4.23.15",
+		"twoslash": "^0.3.9",
 		"typescript": "^6.0.3",
 		"vitepress": "2.0.0-alpha.20",
+		"vitepress-plugin-llms": "^1.14.0",
 		"vitest": "^5.0.5",
 		"vue": "^3.5.44",
 		"zod": "^4.6.7"

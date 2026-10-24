@@ -1,3 +1,7 @@
+---
+description: 'API reference for command() and scope(): their config, the run context and returned values.'
+---
+
 # command & scope
 
 See the [Commands](../guide/commands) and [Scopes](../guide/scopes) guides for usage.

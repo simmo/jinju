@@ -1,3 +1,7 @@
+---
+description: API reference for HelpTemplate and the help data it renders.
+---
+
 # Help
 
 See the [Help guide](../guide/help) for usage.

@@ -1,3 +1,7 @@
+---
+description: How invalid input is reported (every error at once, with exit code 1), throwing JinjuError from run, and customising output with ErrorTemplate.
+---
+
 # Errors
 
 When input is invalid, Jinju collects every problem, prints them to stderr with a usage hint, and exits with code `1`. `run` isn't called.

@@ -1,3 +1,7 @@
+---
+description: 'API reference for jinju() and Program: the program config, run() and help(), and packageVersion().'
+---
+
 # Program
 
 See the [Program guide](../guide/program) for usage.

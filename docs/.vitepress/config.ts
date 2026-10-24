@@ -2,6 +2,9 @@ import { fileURLToPath } from 'node:url';
 
 import { transformerTwoslash } from '@shikijs/vitepress-twoslash';
 import { defineConfig } from 'vitepress';
+import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms';
+
+import { inlineTwoslash } from './llms';
 
 // Every version of the docs is built from its own tag with these variables, so keep them
 // stable (see AGENTS.md). `DOCS_SITE_BASE` is where the site lives (`/jinju/` on GitHub
@@ -12,6 +15,11 @@ const version = process.env.DOCS_VERSION || '';
 const base = version ? `${siteBase}${version}/` : siteBase;
 
 const repo = 'https://github.com/simmo/jinju';
+
+// Examples import the source, so they're checked against the current API.
+const twoslashCompilerOptions = {
+	paths: { jinju: [fileURLToPath(new URL('../../src/index.ts', import.meta.url))] },
+};
 
 /** The parts of a HAST node this file reads. */
 interface HastNode {
@@ -64,19 +72,35 @@ export default defineConfig({
 			__DOCS_SITE_BASE__: JSON.stringify(siteBase),
 			__DOCS_VERSION__: JSON.stringify(version),
 		},
+		plugins: [
+			// `llms.txt`, `llms-full.txt` and a Markdown copy of each page, for agents. Links are
+			// absolute, so they work wherever the file is read.
+			llmstxt({
+				domain: 'https://simmo.github.io',
+				ignoreFiles: ['parts/**'],
+				title: 'Jinju',
+				description: 'Composable, type-safe toolkit for building Node command-line apps',
+				details: [
+					'Use Jinju to build a Node command-line app in TypeScript. Flags, args and commands are defined as separate values and composed into a program, and each command gets fully typed input, with help pages, error reporting and exit codes handled.',
+					'Install it with `npm install jinju`. It needs Node 22.12 or newer and has no runtime dependencies. Its types (`node_modules/jinju/dist/index.d.ts`) are the most reliable reference for the installed version.',
+					'In the examples, comments under a line show the types TypeScript infers for it, and `error TS…` comments show an intended type error.',
+				].join('\n\n'),
+			}),
+		],
 	},
+	// Write the types that examples show on hover into those Markdown files.
+	buildEnd: ({ outDir }) => inlineTwoslash(outDir, twoslashCompilerOptions),
 	markdown: {
+		// A "Copy page" menu on each page: copy or view its Markdown, or open it in an AI chat.
+		config: (md) => {
+			md.use(copyOrDownloadAsMarkdownButtons);
+		},
 		codeTransformers: [
 			transformerTwoslash({
 				// `^?` results as a line under the code (styled as a comment in `style.css`), not a
 				// popup that's always open.
 				queryRendering: 'line',
-				twoslashOptions: {
-					compilerOptions: {
-						// Examples import the source, so they're checked against the current API.
-						paths: { jinju: [fileURLToPath(new URL('../../src/index.ts', import.meta.url))] },
-					},
-				},
+				twoslashOptions: { compilerOptions: twoslashCompilerOptions },
 			}),
 			{ name: 'align-twoslash-queries', enforce: 'post', root: alignQueries },
 		],

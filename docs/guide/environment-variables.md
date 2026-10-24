@@ -1,3 +1,7 @@
+---
+description: Let any flag fall back to an environment variable with the env option, and supply variables yourself in tests.
+---
+
 # Environment variables
 
 Any flag can fall back to an environment variable. Set `env` to the variable's name:

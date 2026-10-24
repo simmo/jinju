@@ -1,3 +1,7 @@
+---
+description: 'The types for naming what Jinju infers: InferFlagType, InferFlags, InferArgs and more.'
+---
+
 # TypeScript
 
 Everything in Jinju is typed from your definitions: there are no separate interfaces to keep in sync. This page covers the types you can use to name those types yourself.

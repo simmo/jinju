@@ -1,3 +1,7 @@
+---
+description: API reference for every exported type, including the inference types.
+---
+
 # Types
 
 Every type used in a public signature is exported. Most code only needs the [inference types](#inference). The rest are here so that anything an editor shows can be named.

@@ -23,6 +23,7 @@ The docs site (VitePress, in `docs/`) is the reference for users. Every change t
 - Write TypeScript examples as `ts twoslash` blocks. They import `jinju` from `src/index.ts` and are type-checked by `npm run docs:build`, so a broken example fails the build. Use `// ^?` to show an inferred type (rendered as a line under the code) and `// @errors: <code>` for an intended type error. Point `^?` at values a reader cares about, such as a destructured arg or flag, not at `args`, whose type is the raw `RunContext<…>`. Several `^?` lines can follow one line of code.
 - Example output (help pages, error messages) must be real: run the code (e.g. with `npx tsx`) and copy it.
 - `README.md` is a short introduction that links to the site. Don't copy the reference into it.
+- Every page needs a `description` in its frontmatter: one sentence saying what the page covers. It's the page's meta description and its summary in `llms.txt`.
 - `npm run format` also formats code inside the docs. Run it before `docs:build`, since a reformatted line can move a `^?` marker.
 
 How the site is published:
@@ -31,6 +32,7 @@ How the site is published:
 - `scripts/build-docs.ts` rebuilds every version from its own tag: the root is the latest release, `/<version>/` is each release, and `/next/` is the newest prerelease. Tags without `docs/.vitepress/config.ts` are skipped. Node runs it directly (type stripping), so it can only use erasable TypeScript syntax and `node:` modules.
 - Old tags are rebuilt with today's script, so the build contract must stay compatible: `npx vitepress build docs` in a checkout of the tag, with `DOCS_SITE_BASE` (the path the site is served from, e.g. `/jinju/`) and `DOCS_VERSION` (the folder: empty, `x.y.z` or `next`) set in the environment. `docs/.vitepress/config.ts` derives `base` from them.
 - The version switcher and the "old version" banner read `versions.json` from the site root at runtime.
+- Each build also writes files for AI assistants: `llms.txt`, `llms-full.txt` and a `.md` copy of every page (`vitepress-plugin-llms`). `docs/.vitepress/llms.ts` then runs each `twoslash` example through twoslash and writes the `^?` types and `@errors` errors into those copies as comments, since agents can't see hovers.
 
 ## Commands
 

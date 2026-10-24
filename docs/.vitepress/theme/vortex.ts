@@ -129,6 +129,8 @@ export const createVortex = (canvas: HTMLCanvasElement): Vortex => {
 	};
 
 	const render = () => {
+		// A zero-sized canvas (e.g. measured while hidden) can't be drawn.
+		if (!width || !height) return;
 		tick += pace;
 		draw.clearRect(0, 0, width, height);
 		draw.lineCap = 'round';

@@ -1,3 +1,7 @@
+---
+description: API reference for ErrorTemplate, JinjuError and every error class Jinju throws.
+---
+
 # Errors
 
 See the [Errors guide](../guide/errors) for usage.

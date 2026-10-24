@@ -1,3 +1,7 @@
+---
+description: Install Jinju and build a first command-line app with typed flags, args and commands.
+---
+
 # Getting started
 
 Jinju is a toolkit for building Node command-line apps in TypeScript. You define flags, args and commands as separate values, compose them into a program, and get back fully typed input in each command's `run` handler. Help pages, error messages and exit codes are handled for you.
@@ -117,6 +121,10 @@ To ship your CLI as a package, point `bin` in `package.json` at the built file a
 ```
 
 `packageVersion(import.meta.url)` reads `version` from the nearest `package.json` above the file, so `--version` always matches what you published.
+
+## Using an AI assistant
+
+The docs are also published for AI assistants and coding agents. Point yours at [`llms.txt`](/llms.txt), an index of every page, or [`llms-full.txt`](/llms-full.txt), the whole site in one file. Every page is also available as Markdown: add `.md` to its URL, or use the **Copy page** menu under its title to copy it or open it in ChatGPT or Claude. In those copies, the types shown on hover here are written into the examples as comments.
 
 ## Next steps
 

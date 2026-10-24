@@ -1,3 +1,7 @@
+---
+description: Test a CLI in-process by injecting argv, env, stdout, stderr and the exit code.
+---
+
 # Testing
 
 A program's input and output can all be injected, so a CLI can be tested in-process without spawning Node or touching `process`:

@@ -1,3 +1,7 @@
+---
+description: Commands bundle flags, args and a run handler; how they are named, what run receives, aliases and exit codes.
+---
+
 # Commands
 
 A command bundles flags, args and a `run` handler. Commands don't have names of their own: a command is named by its key when you add it to the [program](./program)'s command tree.

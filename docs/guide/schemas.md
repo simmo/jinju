@@ -1,3 +1,7 @@
+---
+description: Use any Standard Schema (zod, valibot, arktype) to parse and validate flag and arg values.
+---
+
 # Standard Schema
 
 Any [Standard Schema](https://standardschema.dev) can be used as a parser: zod, valibot, arktype and others. `flag.schema(schema, name?)` and `arg.schema(schema, name?)` return a creator, like [`custom`](./flags#custom-parsers):
