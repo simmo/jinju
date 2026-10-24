@@ -15,6 +15,9 @@ const deploy = command({
 	},
 });
 
+const app = jinju({ commands: { ':site': { deploy } } });
+
+await app.run();
+
 // $ app my-site deploy --env prod -f
-jinju({ commands: { ':site': { deploy } } }).run();
 ```

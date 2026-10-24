@@ -109,7 +109,7 @@ export const createVortex = (canvas: HTMLCanvasElement): Vortex => {
 		const nextY = y + vy * speed * pace;
 
 		if (paint) {
-			const alpha = fadeInOut(life, ttl) * (dark ? 1 : 0.85);
+			const alpha = fadeInOut(life, ttl) * (dark ? 0.6 : 0.85);
 			draw.lineWidth = particles[at + RADIUS]!;
 			draw.strokeStyle = `hsla(${particles[at + HUE]},100%,${dark ? 60 : 50}%,${alpha})`;
 			draw.beginPath();
@@ -141,9 +141,9 @@ export const createVortex = (canvas: HTMLCanvasElement): Vortex => {
 		if (dark) {
 			// Brightened, blurred copies add light on a dark page.
 			screen.globalCompositeOperation = 'lighter';
-			screen.filter = 'blur(8px) brightness(170%)';
+			screen.filter = 'blur(8px) brightness(130%)';
 			screen.drawImage(buffer, 0, 0, width, height);
-			screen.filter = 'blur(4px) brightness(170%)';
+			screen.filter = 'blur(4px) brightness(130%)';
 			screen.drawImage(buffer, 0, 0, width, height);
 		} else {
 			// Adding light would wash out on a light page, so the glow is a soft halo.
