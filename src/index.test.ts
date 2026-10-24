@@ -186,6 +186,7 @@ describe('type exports', () => {
 		expectTypeOf<InferFlags<Flags>>().toEqualTypeOf<{ n: number; v: boolean }>();
 		expectTypeOf<InferArgs<Args>>().toEqualTypeOf<[string | undefined]>();
 		expectTypeOf<RunContext<Flags, Args>['flags']>().toEqualTypeOf<{ n: number; v: boolean }>();
+		expectTypeOf<RunContext<Flags, Args>['unknown']>().toEqualTypeOf<readonly string[]>();
 	});
 
 	test('command and program types', () => {
@@ -194,6 +195,7 @@ describe('type exports', () => {
 		expectTypeOf<Scope>().toHaveProperty('command');
 		expectTypeOf<RunResult>().toEqualTypeOf<void | number | Promise<void | number>>();
 		expectTypeOf<Parsed>().toHaveProperty('argv');
+		expectTypeOf<Parsed>().toHaveProperty('unknown');
 		expectTypeOf<Result<number>>().toEqualTypeOf<
 			{ ok: true; value: number } | { ok: false; errors: jinju.JinjuError[] }
 		>();

@@ -74,6 +74,7 @@ describe('parse', () => {
 				args: ['a', 2],
 				argv: ['a', '--dry-run', '-t', 'x', '--tag=y', '-vv', '2'],
 				flags: { dryRun: true, tag: ['x', 'y'], verbose: 2 },
+				unknown: [],
 			},
 		});
 	});
@@ -120,9 +121,12 @@ describe('parse', () => {
 		expect(result.ok && result.value.argv).toEqual(['3']);
 	});
 
-	test('non-strict ignores unknown flags', async () => {
-		const result = await sync.parse(['a', '--what'], { strict: false });
-		expect(result.ok).toBe(true);
+	test('non-strict collects unknown flags as given', async () => {
+		const result = await sync.parse(['a', '--what', '-xv', '--to=b', '--dry-run'], {
+			strict: false,
+		});
+		expect(result.ok && result.value.unknown).toEqual(['--what', '-x', '--to=b']);
+		expect(result.ok && result.value.flags).toMatchObject({ dryRun: true, verbose: 1 });
 	});
 
 	test('globals are parsed but only declared flags are returned', async () => {

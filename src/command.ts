@@ -19,6 +19,11 @@ export interface RunContext<F extends FlagRecord, A extends ArgList> {
 	args: InferArgs<A>;
 	/** The argv this command parsed (command path removed). */
 	argv: readonly string[];
+	/**
+	 * Flags the command doesn't define, as given (e.g. `--foo=bar`), in order. Only filled
+	 * with `strict: false`; otherwise they're errors and `run` isn't called.
+	 */
+	unknown: readonly string[];
 }
 
 /** Return a number to set the exit code. */
@@ -159,6 +164,7 @@ export interface Parsed {
 	flags: Record<string, unknown>;
 	args: unknown[];
 	argv: readonly string[];
+	unknown: readonly string[];
 }
 
 // oxlint-disable-next-line no-explicit-any
@@ -207,6 +213,7 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 		const flagInputs = new Map<string, string[]>();
 		const occurrences = new Map<string, boolean[]>();
 		const positionals: string[] = [...(options.leading ?? [])];
+		const unknown: string[] = [];
 		const given = new Set<string>();
 
 		for (const token of tokenize(argv, index)) {
@@ -216,6 +223,7 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 			}
 			if (token.type === 'unknown') {
 				if (strict) errors.push(new UnknownFlagError(token.raw));
+				else unknown.push(token.raw);
 				continue;
 			}
 
@@ -267,7 +275,7 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 
 		await Promise.all([...flagResults, ...argResults]);
 		if (errors.length > 0) return { ok: false, errors };
-		return { ok: true, value: { args, argv, flags } };
+		return { ok: true, value: { args, argv, flags, unknown } };
 	}
 
 	/** Invokes the handler with parsed input. */

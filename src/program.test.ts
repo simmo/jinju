@@ -351,6 +351,22 @@ describe('help and version', () => {
 		expect(loose.stdout).toContain('app db <command>');
 	});
 
+	test('strict: false passes unknown flags to run', async () => {
+		const seen: unknown[] = [];
+		const { program: loose } = setup({
+			strict: false,
+			commands: {
+				test: app.command({
+					description: 'x',
+					args: [arg.string(d).multiple()],
+					run: ({ args, unknown }) => void seen.push(args[0], unknown),
+				}),
+			},
+		});
+		expect(await loose.run(['test', '--watch', 'src', '-v', '--reporter=dot'])).toBe(0);
+		expect(seen).toEqual([['src'], ['--watch', '--reporter=dot']]);
+	});
+
 	test('a help template instance renders --help and help()', async () => {
 		const seen: string[][] = [];
 		class Custom extends HelpTemplate {

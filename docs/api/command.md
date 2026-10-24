@@ -49,10 +49,11 @@ interface RunContext<F extends FlagRecord, A extends ArgList> {
 	flags: InferFlags<F>;
 	args: InferArgs<A>;
 	argv: readonly string[];
+	unknown: readonly string[];
 }
 ```
 
-What `run` receives: typed flags and args, and the argv the command parsed (without the command path).
+What `run` receives: typed flags and args, the argv the command parsed (without the command path), and `unknown`: flags the command doesn't define, as given (e.g. `--foo=bar`), in order. `unknown` is only filled when the program sets `strict: false`; otherwise unknown flags are errors and `run` isn't called.
 
 ## `RunResult`
 
@@ -102,7 +103,7 @@ interface ParseOptions {
 | Option    | Description                                                                                                                                |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `globals` | Extra flags parsed and validated alongside the command's own, such as the program's built-ins. Their values aren't included in the result. |
-| `strict`  | Reject unknown flags. Defaults to `true`.                                                                                                  |
+| `strict`  | Reject unknown flags. Defaults to `true`. With `false`, they're returned in `unknown`.                                                     |
 | `leading` | Positional values captured before the command name (dynamic segments), placed first.                                                       |
 | `env`     | Where flags' `env` variables are read from. Defaults to `process.env`.                                                                     |
 
@@ -113,6 +114,7 @@ interface Parsed {
 	flags: Record<string, unknown>;
 	args: unknown[];
 	argv: readonly string[];
+	unknown: readonly string[];
 }
 ```
 

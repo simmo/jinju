@@ -33,7 +33,7 @@ const deploy = command({
 | `hidden`      | Leave the command out of help listings. It can still be run.    |
 | `flags`       | An object of [flags](./flags). Keys become kebab-case names.    |
 | `args`        | A tuple of [args](./args).                                      |
-| `run`         | The handler. Receives `{ flags, args, argv }`.                  |
+| `run`         | The handler. Receives `{ flags, args, argv, unknown }`.         |
 
 ## The `run` handler
 
@@ -42,6 +42,7 @@ const deploy = command({
 - `flags`: an object of parsed flag values, typed from the definitions
 - `args`: a tuple of parsed arg values, in order
 - `argv`: the raw argv the command parsed, with the command path removed
+- `unknown`: flags the command doesn't define, as given. Always empty unless the program sets `strict: false`; see [Passing on unknown flags](#passing-on-unknown-flags)
 
 `run` may be async. Its return value sets the exit code:
 
@@ -51,6 +52,31 @@ const deploy = command({
 - any other error is rethrown from `app.run()`
 
 `run` is only called when all input is valid. All parsing and validation errors are collected first and reported together.
+
+## Passing on unknown flags
+
+By default, a flag the command doesn't define is an error. With `strict: false` on the program, the command runs anyway and receives those flags in `unknown`, in the order they were given. This suits a command that wraps another tool and passes extra options on to it:
+
+```ts twoslash
+import { arg, command, jinju } from 'jinju';
+/** Runs a command, resolving to its exit code. */
+declare const spawn: (command: string, args: string[]) => Promise<number>;
+// ---cut---
+const test = command({
+	description: 'Run the tests',
+	args: [arg.string({ name: 'files', description: 'Test files' }).multiple()],
+	run: ({ args: [files = []], unknown }) => {
+		//                           ^?
+		return spawn('vitest', ['run', ...unknown, ...files]);
+	},
+});
+
+jinju({ commands: { test }, strict: false });
+```
+
+With this program, `app test src --bail=1 -u` calls `vitest run --bail=1 -u src`.
+
+Each entry is exactly what was typed, so `--bail=1` keeps its value. Jinju can't tell whether an unknown flag takes a value, so it reads `--bail 1` as the flag `--bail` and a positional `1`. Write unknown flags' values with `=`. Bundled short flags are split, and unknown letters are listed one by one: `-uv` gives `-u` and `-v`, unless `-v` is one of the command's own flags.
 
 ## Names
 
