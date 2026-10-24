@@ -28,7 +28,7 @@ interface Target {
 
 const out = resolve(process.argv[2] ?? '_site');
 const { homepage } = JSON.parse(readFileSync('package.json', 'utf8')) as { homepage: string };
-// `https://simmo.github.io/jinju/` → `https://simmo.github.io` and `/jinju/`.
+// `https://jinju.js.org/` → `https://jinju.js.org` and `/`.
 const { origin: siteOrigin, pathname: siteBase } = new URL(homepage);
 const marker = 'docs/.vitepress/config.ts';
 

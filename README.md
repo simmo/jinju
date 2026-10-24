@@ -13,7 +13,7 @@
 
 A composable, type-safe toolkit for building Node command-line apps. Define flags, args and commands separately, compose them, and get fully typed input in every command. Help pages, errors and exit codes are handled for you.
 
-**[Read the documentation →](https://simmo.github.io/jinju/)**
+**[Read the documentation →](https://jinju.js.org/)**
 
 ## Install
 
@@ -63,7 +63,7 @@ $ app sync --help
 - **Help and errors**: generated `--help` pages and collected errors, both customisable
 - **Testable**: inject argv, env, stdout, stderr and the exit code
 
-See the [guide](https://simmo.github.io/jinju/guide/getting-started) and the [API reference](https://simmo.github.io/jinju/api/flag).
+See the [guide](https://jinju.js.org/guide/getting-started) and the [API reference](https://jinju.js.org/api/flag).
 
 ---
 

@@ -8,8 +8,8 @@ import { inlineTwoslash } from './llms';
 
 // Every version of the docs is built from its own tag with these variables, so keep them
 // stable (see AGENTS.md). `DOCS_SITE_ORIGIN` is the site's scheme and host
-// (`https://simmo.github.io`), `DOCS_SITE_BASE` is the path it's served from (`/jinju/` on
-// GitHub Pages) and `DOCS_VERSION` is the folder for this build: empty for the latest
+// (`https://jinju.js.org`), `DOCS_SITE_BASE` is the path it's served from (`/` at the
+// site root) and `DOCS_VERSION` is the folder for this build: empty for the latest
 // release, `x.y.z` for a release or `next` for the newest prerelease.
 const siteOrigin = process.env.DOCS_SITE_ORIGIN || undefined;
 const siteBase = process.env.DOCS_SITE_BASE || '/';
