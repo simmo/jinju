@@ -23,17 +23,18 @@ const deploy = command({
 
 ## Config
 
-`command({ name?, description, aliases?, hidden?, flags?, args?, run })`
+`command({ name?, description, aliases?, hidden?, strict?, flags?, args?, run })`
 
-| Option        | Description                                                     |
-| ------------- | --------------------------------------------------------------- |
-| `description` | Shown in help. Required.                                        |
-| `name`        | Overrides the name taken from the command's key. A single word. |
-| `aliases`     | Other names that route to this command.                         |
-| `hidden`      | Leave the command out of help listings. It can still be run.    |
-| `flags`       | An object of [flags](./flags). Keys become kebab-case names.    |
-| `args`        | A tuple of [args](./args).                                      |
-| `run`         | The handler. Receives `{ flags, args, argv, unknown }`.         |
+| Option        | Description                                                                                                                       |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `description` | Shown in help. Required.                                                                                                          |
+| `name`        | Overrides the name taken from the command's key. A single word.                                                                   |
+| `aliases`     | Other names that route to this command.                                                                                           |
+| `hidden`      | Leave the command out of help listings. It can still be run.                                                                      |
+| `strict`      | Reject unknown flags. Overrides the scope's and the program's setting. See [Passing on unknown flags](#passing-on-unknown-flags). |
+| `flags`       | An object of [flags](./flags). Keys become kebab-case names.                                                                      |
+| `args`        | A tuple of [args](./args).                                                                                                        |
+| `run`         | The handler. Receives `{ flags, args, argv, unknown }`.                                                                           |
 
 ## The `run` handler
 
@@ -42,7 +43,7 @@ const deploy = command({
 - `flags`: an object of parsed flag values, typed from the definitions
 - `args`: a tuple of parsed arg values, in order
 - `argv`: the raw argv the command parsed, with the command path removed
-- `unknown`: flags the command doesn't define, as given. Always empty unless the program sets `strict: false`; see [Passing on unknown flags](#passing-on-unknown-flags)
+- `unknown`: flags the command doesn't define, as given. Always empty unless the command isn't strict; see [Passing on unknown flags](#passing-on-unknown-flags)
 
 `run` may be async. Its return value sets the exit code:
 
@@ -55,7 +56,7 @@ const deploy = command({
 
 ## Passing on unknown flags
 
-By default, a flag the command doesn't define is an error. With `strict: false` on the program, the command runs anyway and receives those flags in `unknown`, in the order they were given. This suits a command that wraps another tool and passes extra options on to it:
+By default, a flag the command doesn't define is an error. With `strict: false`, the command runs anyway and receives those flags in `unknown`, in the order they were given. This suits a command that wraps another tool and passes extra options on to it:
 
 ```ts twoslash
 import { arg, command, jinju } from 'jinju';
@@ -64,6 +65,7 @@ declare const spawn: (command: string, args: string[]) => Promise<number>;
 // ---cut---
 const test = command({
 	description: 'Run the tests',
+	strict: false,
 	args: [arg.string({ name: 'files', description: 'Test files' }).multiple()],
 	run: ({ args: [files = []], unknown }) => {
 		//                           ^?
@@ -71,10 +73,12 @@ const test = command({
 	},
 });
 
-jinju({ commands: { test }, strict: false });
+jinju({ commands: { test } });
 ```
 
 With this program, `app test src --bail=1 -u` calls `vitest run --bail=1 -u src`.
+
+`strict` can be set on the program, on a [scope](./scopes) and on a command. The nearest setting wins: the command's own, then its scopes' from the innermost out, then the program's. Here only `test` accepts unknown flags, and every other command still rejects them. Set `strict: false` on a scope to relax a group of commands, or on the program to relax all of them, with `strict: true` on any that should stay strict.
 
 Each entry is exactly what was typed, so `--bail=1` keeps its value. Jinju can't tell whether an unknown flag takes a value, so it reads `--bail 1` as the flag `--bail` and a positional `1`. Write unknown flags' values with `=`. Bundled short flags are split, and unknown letters are listed one by one: `-uv` gives `-u` and `-v`, unless `-v` is one of the command's own flags.
 

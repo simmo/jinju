@@ -367,6 +367,23 @@ describe('help and version', () => {
 		expect(seen).toEqual([['src'], ['--watch', '--reporter=dot']]);
 	});
 
+	test('a command can override the program strict setting', async () => {
+		const seen: unknown[] = [];
+		const record = (strict: boolean) =>
+			command({ description: 'x', strict, run: ({ unknown }) => void seen.push(unknown) });
+		const { output: out, program: mixed } = setup({
+			commands: { loose: record(false), tight: record(true) },
+		});
+		expect(await mixed.run(['loose', '--watch'])).toBe(0);
+		expect(seen).toEqual([['--watch']]);
+
+		const { program: lenient } = setup({ strict: false, commands: { tight: record(true) } });
+		expect(await lenient.run(['tight', '--watch'])).toBe(1);
+		expect(await mixed.run(['tight', '--watch'])).toBe(1);
+		expect(out.stderr).toContain("Unknown flag '--watch'");
+		expect(seen).toHaveLength(1);
+	});
+
 	test('a help template instance renders --help and help()', async () => {
 		const seen: string[][] = [];
 		class Custom extends HelpTemplate {

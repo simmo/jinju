@@ -192,6 +192,8 @@ describe('type exports', () => {
 	test('command and program types', () => {
 		expectTypeOf<CommandConfig<{}, [], unknown>>().toHaveProperty('run');
 		expectTypeOf<ScopeConfig<{}, []>>().toHaveProperty('flags');
+		expectTypeOf<ScopeConfig<{}, []>>().toHaveProperty('strict');
+		expectTypeOf<CommandConfig<{}, [], unknown>>().toHaveProperty('strict');
 		expectTypeOf<Scope>().toHaveProperty('command');
 		expectTypeOf<RunResult>().toEqualTypeOf<void | number | Promise<void | number>>();
 		expectTypeOf<Parsed>().toHaveProperty('argv');

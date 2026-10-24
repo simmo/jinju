@@ -21,7 +21,7 @@ export interface RunContext<F extends FlagRecord, A extends ArgList> {
 	argv: readonly string[];
 	/**
 	 * Flags the command doesn't define, as given (e.g. `--foo=bar`), in order. Only filled
-	 * with `strict: false`; otherwise they're errors and `run` isn't called.
+	 * when the command isn't strict; otherwise they're errors and `run` isn't called.
 	 */
 	unknown: readonly string[];
 }
@@ -42,6 +42,8 @@ export interface CommandConfig<
 	aliases?: readonly string[];
 	/** Hide from help listings. */
 	hidden?: boolean;
+	/** Reject unknown flags. Overrides the scope's and the program's setting. */
+	strict?: boolean;
 	flags?: F;
 	/** Appended to any args inherited from the scope. */
 	args?: A & CheckArgs<[...Prefix, ...A]>;
@@ -52,6 +54,8 @@ export interface CommandConfig<
 export interface ScopeDefinition {
 	flags: FlagRecord;
 	args: ArgList;
+	/** Whether the scope's commands reject unknown flags, unless they set their own. */
+	strict?: boolean;
 }
 
 const EMPTY_SCOPE: ScopeDefinition = { flags: {}, args: [] };
@@ -152,7 +156,10 @@ export interface ParseOptions {
 	 * Their values aren't included in the result.
 	 */
 	globals?: FlagRecord;
-	/** Reject unknown flags. Defaults to `true`. */
+	/**
+	 * Reject unknown flags, for commands (and their scopes) that don't set `strict`. Defaults
+	 * to `true`.
+	 */
 	strict?: boolean;
 	/** Positional values captured before the command name (dynamic segments), placed first. */
 	leading?: readonly string[];
@@ -178,6 +185,8 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 	readonly args: A;
 	/** Keys of flags inherited from the scope (and not redefined by the command). */
 	readonly inherited: ReadonlySet<string>;
+	/** The command's own `strict`, or else its scope's. `undefined` when neither sets it. */
+	readonly strict: boolean | undefined;
 	readonly #params: Param[];
 
 	constructor(
@@ -188,6 +197,7 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 		this.flags = { ...scope.flags, ...own } as F;
 		this.inherited = new Set(Object.keys(scope.flags).filter((key) => !(key in own)));
 		this.args = [...scope.args, ...(config.args ?? [])] as unknown as A;
+		this.strict = config.strict ?? scope.strict;
 		this.#params = this.args.map(toParam);
 		indexFlags(this.flags);
 		checkMultiple(this.#params);
@@ -207,7 +217,8 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 
 	/** Parses argv (without the command path) into typed flags and args. */
 	async parse(argv: readonly string[], options: ParseOptions = {}): Promise<Result<Parsed>> {
-		const { globals = {}, strict = true } = options;
+		const { globals = {} } = options;
+		const strict = this.strict ?? options.strict ?? true;
 		const index = indexFlags({ ...globals, ...this.flags });
 		const errors: JinjuError[] = [];
 		const flagInputs = new Map<string, string[]>();
@@ -300,6 +311,11 @@ export interface ScopeConfig<F extends FlagRecord, A extends ArgList, Prefix ext
 	flags?: F;
 	/** Args every command in the scope starts with. */
 	args?: A & CheckArgs<[...Prefix, ...A]>;
+	/**
+	 * Reject unknown flags. Overrides the program's setting and any outer scope's; commands
+	 * can override it.
+	 */
+	strict?: boolean;
 }
 
 /** Shared flags and args for a group of commands. Scopes nest. */
@@ -321,10 +337,12 @@ const createScope = (definition: ScopeDefinition): Scope => ({
 	args: definition.args as [],
 	command: ((config: CommandConfig<FlagRecord, ArgList, never>) =>
 		new Command(config, definition)) as Scope['command'],
-	scope: ((config: { flags?: FlagRecord; args?: ArgList }) => {
-		const next = {
+	scope: ((config: { flags?: FlagRecord; args?: ArgList; strict?: boolean }) => {
+		const strict = config.strict ?? definition.strict;
+		const next: ScopeDefinition = {
 			flags: { ...definition.flags, ...config.flags },
 			args: [...definition.args, ...(config.args ?? [])],
+			...(strict === undefined ? {} : { strict }),
 		};
 		indexFlags(next.flags);
 		checkMultiple(next.args.map(toParam));

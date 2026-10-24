@@ -34,6 +34,7 @@ interface CommandConfig<F extends FlagRecord, A extends ArgList, Ctx, Prefix ext
 	description: string;
 	aliases?: readonly string[];
 	hidden?: boolean;
+	strict?: boolean;
 	flags?: F;
 	args?: A & CheckArgs<[...Prefix, ...A]>;
 	run: (context: Ctx) => RunResult;
@@ -53,7 +54,7 @@ interface RunContext<F extends FlagRecord, A extends ArgList> {
 }
 ```
 
-What `run` receives: typed flags and args, the argv the command parsed (without the command path), and `unknown`: flags the command doesn't define, as given (e.g. `--foo=bar`), in order. `unknown` is only filled when the program sets `strict: false`; otherwise unknown flags are errors and `run` isn't called.
+What `run` receives: typed flags and args, the argv the command parsed (without the command path), and `unknown`: flags the command doesn't define, as given (e.g. `--foo=bar`), in order. `unknown` is only filled when the command isn't strict; otherwise unknown flags are errors and `run` isn't called.
 
 ## `RunResult`
 
@@ -71,6 +72,7 @@ class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgList> {
 	readonly flags: F;
 	readonly args: A;
 	readonly inherited: ReadonlySet<string>;
+	readonly strict: boolean | undefined;
 	get description(): string;
 	get params(): readonly Param[];
 	parse(argv: readonly string[], options?: ParseOptions): Promise<Result<Parsed>>;
@@ -78,14 +80,15 @@ class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgList> {
 }
 ```
 
-| Member      | Description                                                 |
-| ----------- | ----------------------------------------------------------- |
-| `flags`     | Own and inherited flags.                                    |
-| `args`      | Inherited args followed by own args.                        |
-| `inherited` | Keys of flags inherited from the scope and not redefined.   |
-| `params`    | The args as [`Param`](./types#param)s.                      |
-| `parse`     | Parses argv (without the command path) into flags and args. |
-| `execute`   | Calls `run` with parsed input.                              |
+| Member      | Description                                                                                                                             |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `flags`     | Own and inherited flags.                                                                                                                |
+| `args`      | Inherited args followed by own args.                                                                                                    |
+| `inherited` | Keys of flags inherited from the scope and not redefined.                                                                               |
+| `strict`    | The command's own `strict`, or else its innermost scope's that sets one. `undefined` when none do, so `parse` uses its `strict` option. |
+| `params`    | The args as [`Param`](./types#param)s.                                                                                                  |
+| `parse`     | Parses argv (without the command path) into flags and args.                                                                             |
+| `execute`   | Calls `run` with parsed input.                                                                                                          |
 
 Create commands with [`command`](#command) or `scope.command` rather than `new Command`.
 
@@ -103,7 +106,7 @@ interface ParseOptions {
 | Option    | Description                                                                                                                                |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `globals` | Extra flags parsed and validated alongside the command's own, such as the program's built-ins. Their values aren't included in the result. |
-| `strict`  | Reject unknown flags. Defaults to `true`. With `false`, they're returned in `unknown`.                                                     |
+| `strict`  | Reject unknown flags, for commands (and scopes) that don't set `strict`. Defaults to `true`. With `false`, they're returned in `unknown`.  |
 | `leading` | Positional values captured before the command name (dynamic segments), placed first.                                                       |
 | `env`     | Where flags' `env` variables are read from. Defaults to `process.env`.                                                                     |
 
@@ -143,10 +146,11 @@ interface Scope<P extends FlagRecord = {}, PA extends ArgList = []> {
 interface ScopeConfig<F extends FlagRecord, A extends ArgList, Prefix extends ArgList = []> {
 	flags?: F;
 	args?: A & CheckArgs<[...Prefix, ...A]>;
+	strict?: boolean;
 }
 ```
 
-`flags` are declared by every command in the scope, and accepted before the command name. Every command in the scope starts with `args`.
+`flags` are declared by every command in the scope, and accepted before the command name. Every command in the scope starts with `args`. `strict` sets whether its commands reject unknown flags. It overrides the program and any outer scope, and commands can override it.
 
 ## `ScopeDefinition`
 
@@ -154,10 +158,11 @@ interface ScopeConfig<F extends FlagRecord, A extends ArgList, Prefix extends Ar
 interface ScopeDefinition {
 	flags: FlagRecord;
 	args: ArgList;
+	strict?: boolean;
 }
 ```
 
-The flags and args a command inherits from its scope.
+The flags, args and `strict` setting a command inherits from its scope.
 
 ## `AnyCommand`
 

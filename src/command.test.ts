@@ -129,6 +129,34 @@ describe('parse', () => {
 		expect(result.ok && result.value.flags).toMatchObject({ dryRun: true, verbose: 1 });
 	});
 
+	test('strict: the command, then its scopes, then the parse option, then true', async () => {
+		const unknown = async (target: { parse: typeof sync.parse }, strict?: boolean) => {
+			const result = await target.parse(['--what'], strict === undefined ? {} : { strict });
+			return result.ok ? result.value.unknown : result.errors.map((error) => error.message);
+		};
+		const rejected = ["Unknown flag '--what'"];
+		const loose = scope({ strict: false });
+		const plain = command({ description: 'x', run: noop });
+		expect(plain.strict).toBeUndefined();
+		expect(await unknown(plain)).toEqual(rejected);
+		expect(await unknown(plain, false)).toEqual(['--what']);
+
+		const own = command({ description: 'x', strict: false, run: noop });
+		expect(await unknown(own, true)).toEqual(['--what']);
+
+		const inherited = loose.command({ description: 'x', run: noop });
+		expect(inherited.strict).toBe(false);
+		expect(await unknown(inherited, true)).toEqual(['--what']);
+		expect(await unknown(loose.scope({}).command({ description: 'x', run: noop }))).toEqual([
+			'--what',
+		]);
+
+		const strictAgain = loose.scope({ strict: true }).command({ description: 'x', run: noop });
+		expect(await unknown(strictAgain, false)).toEqual(rejected);
+		const overridden = loose.command({ description: 'x', strict: true, run: noop });
+		expect(await unknown(overridden)).toEqual(rejected);
+	});
+
 	test('globals are parsed but only declared flags are returned', async () => {
 		const result = await sync.parse(['a', '--quiet'], { globals: { quiet: flag.boolean(d) } });
 		expect(result.ok && result.value.flags).toEqual({ dryRun: false, tag: undefined, verbose: 0 });
