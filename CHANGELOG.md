@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Unknown flags in non-strict mode: with `strict: false`, `run` receives the flags a command doesn't define in `unknown`, as given (e.g. `--foo=bar`), so it can pass them on to another tool. `strict` can be set on the program, a scope or a command, and the nearest setting wins
+
+### Fixed
+
+- Docs favicons include PNG, ICO and Apple touch icon versions alongside the SVG, so they show in Safari too
+
 ## [0.1.1] - 2026-10-25
 
 ### Changed
@@ -25,7 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Immutable modifiers `.required()`, `.multiple()` and `.default()` on flags and args, with fully inferred types (`InferFlagType`, `InferArgType`, `InferFlags`, `InferArgs`). `Flag`, `Arg` and `Switch` are classes built on a shared abstract `Param` base. Every type used in a public signature is exported (e.g. `Param`, `Defined`, `ParseOptions`, `MergeFlags`, `CheckArgs`)
 - Positional allocation supporting one `.multiple()` arg in any position (e.g. `cp`-style `[...sources, dest]`)
 - `command()` with typed `run` context, optional `name`, `aliases`, `hidden` and exit codes returned from `run`
-- Unknown flags in non-strict mode: with `strict: false`, `run` receives the flags a command doesn't define in `unknown`, as given (e.g. `--foo=bar`), so it can pass them on to another tool. `strict` can be set on the program, a scope or a command, and the nearest setting wins
 - `scope()` for flags and args shared by groups of commands; scopes nest, and shared flags are accepted before the command name
 - Dynamic segments: a `:name` key in the command tree reads a value before the command name into the commands' arg called `name` (e.g. `app my-site deploy`), with static names taking priority and setup checked by `jinju()`. Mistakes in the command tree are compile-time errors: `$` must be a command, one segment per level, no args on `$` next to a segment, and (with literal arg names) each command's segment args. `Arg` has a third type parameter carrying its literal `name`, and `CheckTree` (with its building blocks `TreeErrors`, `NodeErrors` and `SegmentError`) is exported
 - `jinju()` program with nested command trees (`$` for a level's own command), built-in `--help`/`-h` and `--version`, help generation, `strict` mode and injectable `stdout`, `stderr` and `exit`
@@ -36,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Error classes extending `JinjuError`; errors are collected and reported together
 - Tooling: `fallow` (with type-aware analysis enabled, and `fallow dead-code` checked in CI), CI tests on Node 22, 24 and 26 (including loading the build with `require()`), coverage checks (100% required), CI summary support and type tests run by `vitest`
 - `AGENTS.md` (imported by `CLAUDE.md`) with contributor guidance for coding agents, including keeping the changelog and documentation up to date
-- Documentation site at https://jinju.js.org/, built with VitePress: guides and an API reference, with examples type-checked against the source. Docs are versioned: the root is the latest release, `/x.y.z/` each release and `/next/` the newest prerelease, with a version switcher. Favicons include PNG, ICO and Apple touch icon versions alongside the SVG, so they show in Safari too. Every release redeploys it to GitHub Pages. For AI assistants, it publishes `llms.txt`, `llms-full.txt` and a Markdown copy of every page, with the types the examples show on hover written in as comments, and each page has a Copy page menu for copying it as Markdown or opening it in ChatGPT or Claude
+- Documentation site at https://jinju.js.org/, built with VitePress: guides and an API reference, with examples type-checked against the source. Docs are versioned: the root is the latest release, `/x.y.z/` each release and `/next/` the newest prerelease, with a version switcher. Every release redeploys it to GitHub Pages. For AI assistants, it publishes `llms.txt`, `llms-full.txt` and a Markdown copy of every page, with the types the examples show on hover written in as comments, and each page has a Copy page menu for copying it as Markdown or opening it in ChatGPT or Claude
 - Docs tooling: `docs:dev`, `docs:build` and `docs:build:all` scripts, a docs build in CI (catching dead links and broken examples), and a test that every export has an entry in the API reference
 
 ### Changed
