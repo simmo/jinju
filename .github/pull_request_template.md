@@ -10,3 +10,4 @@
 
 - [ ] I have read the [contributing guidelines](https://github.com/simmo/jinju/block/main/CONTRIBUTING.md).
 - [ ] I have updated the `CHANGELOG.md` file based on the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) specification.
+- [ ] I have updated the documentation in `docs/` for any user-facing change.

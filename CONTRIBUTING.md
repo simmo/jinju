@@ -20,6 +20,7 @@ Once you've made your changes, please submit a pull request. In your pull reques
   - `Removed` for now removed features.
   - `Fixed` for any bug fixes.
   - `Security` in case of vulnerabilities.
+- Be sure to update the documentation in `docs/` for any user-facing change: the guide pages in `docs/guide/` and the API reference in `docs/api/`. Preview it with `npm run docs:dev`, and check it builds with `npm run docs:build`.
 
 ## Issues
 

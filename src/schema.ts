@@ -1,9 +1,9 @@
 import type { Parse } from './value';
 
 /**
- * The Standard Schema interface (https://standardschema.dev), as far as jinju uses it.
+ * The Standard Schema interface (https://standardschema.dev), as far as Jinju uses it.
  * Structurally compatible with `@standard-schema/spec`, so schemas from any compliant
- * library (zod, valibot, arktype, …) can be used without jinju depending on them.
+ * library (zod, valibot, arktype, …) can be used without Jinju depending on them.
  */
 export interface StandardSchemaV1<Input = unknown, Output = Input> {
 	readonly '~standard': {

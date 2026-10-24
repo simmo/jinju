@@ -41,6 +41,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    outputs:
+      # The Release step may fail without failing the job (prereleases), so check its outcome.
+      released: ${{ steps.release.outcome == 'success' && inputs.dry-run != true }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -73,8 +76,21 @@ jobs:
         run: npm run build
 
       - name: Release
+        id: release
         if: steps.commit.outputs.current != 'false'
         continue-on-error: ${{ env.RELEASE == 'prerelease' }}
         run: npm run release -- ${{ env.RELEASE }} --ci ${{ contains(fromJSON('["premajor", "preminor", "prepatch", "prerelease"]'), env.RELEASE) && '--preRelease=beta --plugins.@release-it/keep-a-changelog.keepUnreleased' || '' }} --dry-run=${{ inputs.dry-run || false }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Every release (prereleases included, for /next/) redeploys the docs. Called rather than
+  # triggered, because tags pushed with GITHUB_TOKEN don't start other workflows.
+  docs:
+    name: Docs
+    needs: release
+    if: needs.release.outputs.released == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/docs.yml

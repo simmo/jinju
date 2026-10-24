@@ -1,3 +1,6 @@
+import { readdirSync, readFileSync } from 'node:fs';
+
+import ts from 'typescript';
 import { describe, expect, expectTypeOf, test } from 'vitest';
 
 import * as jinju from './index';
@@ -272,5 +275,44 @@ describe('type exports', () => {
 		expectTypeOf<Toggle<number>>().returns.toBeNumber();
 		expectTypeOf<ParamKind>().toEqualTypeOf<'arg' | 'flag' | 'switch'>();
 		expectTypeOf<ParamOptions>().toHaveProperty('choices');
+	});
+});
+
+describe('documentation', () => {
+	// Every export, values and types, as listed in `index.ts`.
+	const exported = () => {
+		const file = new URL('index.ts', import.meta.url);
+		const source = ts.createSourceFile(
+			'index.ts',
+			readFileSync(file, 'utf8'),
+			ts.ScriptTarget.Latest,
+		);
+		return source.statements.flatMap((statement) =>
+			ts.isExportDeclaration(statement) &&
+			statement.exportClause &&
+			ts.isNamedExports(statement.exportClause)
+				? statement.exportClause.elements.map((element) => element.name.text)
+				: [],
+		);
+	};
+
+	// Headings of the API reference (`docs/api/*.md`) naming an export, e.g. ``## `flag` ``.
+	const documented = () => {
+		const dir = new URL('../docs/api/', import.meta.url);
+		const pages = readdirSync(dir).filter((name) => name.endsWith('.md'));
+		return new Set(
+			pages.flatMap((page) =>
+				[...readFileSync(new URL(page, dir), 'utf8').matchAll(/^#{2,3} `(\w+)`/gm)].map(
+					([, name]) => name,
+				),
+			),
+		);
+	};
+
+	test('every export has a heading in the API reference', () => {
+		const names = exported();
+		expect(names.length).toBeGreaterThan(0);
+		const headings = documented();
+		expect(names.filter((name) => !headings.has(name))).toEqual([]);
 	});
 });
