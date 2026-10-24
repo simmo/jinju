@@ -76,7 +76,7 @@ export {
 	HelpTemplate,
 	type HelpTemplateOptions,
 } from './help';
-export { jinju, Program, type ProgramConfig } from './program';
+export { jinju, Program, type ProgramConfig, type RunOptions } from './program';
 export type { CheckTree, CommandTree, NodeErrors, SegmentError, TreeErrors } from './tree';
 export type {
 	JsonValue,

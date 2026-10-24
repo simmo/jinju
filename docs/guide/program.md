@@ -30,7 +30,7 @@ await app.run();
 
 ## Config
 
-`jinju({ name?, version?, description?, commands, strict?, help?, error?, env?, stdout?, stderr?, exit? })`
+`jinju({ name?, version?, description?, commands, strict?, help?, error?, env?, stdout?, stderr?, exit?, signals? })`
 
 | Option        | Default                 | Description                                                                                                    |
 | ------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -45,6 +45,7 @@ await app.run();
 | `stdout`      | `process.stdout.write`  | Receives help and version text.                                                                                |
 | `stderr`      | `process.stderr.write`  | Receives error output.                                                                                         |
 | `exit`        | Sets `process.exitCode` | Receives the exit code.                                                                                        |
+| `signals`     | `['SIGINT', 'SIGTERM']` | Process signals that [cancel](./commands#cancellation) a running command. `[]` leaves them to Node.            |
 
 See [Testing](./testing) for how `env`, `stdout`, `stderr` and `exit` help in tests.
 
@@ -62,11 +63,11 @@ Mistakes such as duplicate names, `$` holding a subtree or invalid names throw a
 
 `jinju()` returns a [`Program`](../api/program#program):
 
-| Member        | Description                                                                 |
-| ------------- | --------------------------------------------------------------------------- |
-| `run(argv?)`  | Parses argv, routes it to a command and runs it. Resolves to the exit code. |
-| `help(path?)` | Returns the help text for a command path, without printing it.              |
-| `name`        | The program's name: `name` from the config, or the script's file name.      |
+| Member                 | Description                                                                                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `run(argv?, options?)` | Parses argv, routes it to a command and runs it. Resolves to the exit code. `options.signal` can [cancel](./commands#cancellation) the command. |
+| `help(path?)`          | Returns the help text for a command path, without printing it.                                                                                  |
+| `name`                 | The program's name: `name` from the config, or the script's file name.                                                                          |
 
 ### Running
 
@@ -114,11 +115,13 @@ Running a group (a level without `$`) prints its help. It exits with `0` when th
 
 `app.run()` resolves to the exit code and passes it to `exit`, which by default sets `process.exitCode`, so Node exits with it once pending work is done.
 
-| Code       | When                                               |
-| ---------- | -------------------------------------------------- |
-| `0`        | Success, `--help` or `--version`                   |
-| `1`        | Invalid input, or a `JinjuError` thrown from `run` |
-| any number | Returned from `run`                                |
+| Code       | When                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------ |
+| `0`        | Success, `--help` or `--version`                                                     |
+| `1`        | Invalid input, or a `JinjuError` thrown from `run`                                   |
+| any number | Returned from `run`                                                                  |
+| `130`      | [Cancelled](./commands#cancellation) by Ctrl+C (`SIGINT`) or `run`'s `signal` option |
+| `143`      | Cancelled by `SIGTERM` (any signal: `128` plus its number)                           |
 
 ## Reading the version
 

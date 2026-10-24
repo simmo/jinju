@@ -56,6 +56,7 @@ import type {
 	ProgramConfig,
 	Result,
 	RunContext,
+	RunOptions,
 	RunResult,
 	Scope,
 	ScopeConfig,
@@ -210,6 +211,9 @@ describe('type exports', () => {
 		expectTypeOf<RunResult>().toEqualTypeOf<void | number | Promise<void | number>>();
 		expectTypeOf<Parsed>().toHaveProperty('argv');
 		expectTypeOf<Parsed>().toHaveProperty('unknown');
+		expectTypeOf<RunContext<{}, []>['signal']>().toEqualTypeOf<AbortSignal>();
+		expectTypeOf<RunOptions>().toHaveProperty('signal');
+		expectTypeOf<ProgramConfig>().toHaveProperty('signals');
 		expectTypeOf<Result<number>>().toEqualTypeOf<
 			{ ok: true; value: number } | { ok: false; errors: jinju.JinjuError[] }
 		>();
