@@ -9,11 +9,14 @@
 // without docs (from before the site existed) are skipped. Until there's a release with
 // docs, the root shows the newest prerelease.
 //
+// The site is served from `homepage` in package.json. It's read here, from the current
+// checkout, and passed to every version's build as `DOCS_SITE_ORIGIN` and `DOCS_SITE_BASE`, so
+// changing it moves every version, old tags included.
+//
 // Usage: node scripts/build-docs.ts [out-dir]
-// Env:   DOCS_SITE_BASE, the path the site is served from (e.g. `/jinju/`). Defaults to `/`.
 
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -24,7 +27,9 @@ interface Target {
 }
 
 const out = resolve(process.argv[2] ?? '_site');
-const siteBase = process.env.DOCS_SITE_BASE || '/';
+const { homepage } = JSON.parse(readFileSync('package.json', 'utf8')) as { homepage: string };
+// `https://simmo.github.io/jinju/` → `https://simmo.github.io` and `/jinju/`.
+const { origin: siteOrigin, pathname: siteBase } = new URL(homepage);
 const marker = 'docs/.vitepress/config.ts';
 
 const run = (command: string, args: string[], cwd = process.cwd(), env = process.env) =>
@@ -76,6 +81,7 @@ try {
 				console.log(`▸ ${tag}: building /${dir}`);
 				run('npx', ['vitepress', 'build', 'docs', '--outDir', built], checkout, {
 					...process.env,
+					DOCS_SITE_ORIGIN: siteOrigin,
 					DOCS_SITE_BASE: siteBase,
 					DOCS_VERSION: dir,
 				});

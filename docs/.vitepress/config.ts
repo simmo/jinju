@@ -7,9 +7,11 @@ import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
 import { inlineTwoslash } from './llms';
 
 // Every version of the docs is built from its own tag with these variables, so keep them
-// stable (see AGENTS.md). `DOCS_SITE_BASE` is where the site lives (`/jinju/` on GitHub
-// Pages) and `DOCS_VERSION` is the folder for this build: empty for the latest release,
-// `x.y.z` for a release or `next` for the newest prerelease.
+// stable (see AGENTS.md). `DOCS_SITE_ORIGIN` is the site's scheme and host
+// (`https://simmo.github.io`), `DOCS_SITE_BASE` is the path it's served from (`/jinju/` on
+// GitHub Pages) and `DOCS_VERSION` is the folder for this build: empty for the latest
+// release, `x.y.z` for a release or `next` for the newest prerelease.
+const siteOrigin = process.env.DOCS_SITE_ORIGIN || undefined;
 const siteBase = process.env.DOCS_SITE_BASE || '/';
 const version = process.env.DOCS_VERSION || '';
 const base = version ? `${siteBase}${version}/` : siteBase;
@@ -73,10 +75,11 @@ export default defineConfig({
 			__DOCS_VERSION__: JSON.stringify(version),
 		},
 		plugins: [
-			// `llms.txt`, `llms-full.txt` and a Markdown copy of each page, for agents. Links are
-			// absolute, so they work wherever the file is read.
+			// `llms.txt`, `llms-full.txt` and a Markdown copy of each page, for agents. With an
+			// origin, links are absolute, so they work wherever the file is read; without one (local
+			// builds), they're root-relative.
 			llmstxt({
-				domain: 'https://simmo.github.io',
+				domain: siteOrigin,
 				ignoreFiles: ['parts/**'],
 				title: 'Jinju',
 				description: 'Composable, type-safe toolkit for building Node command-line apps',

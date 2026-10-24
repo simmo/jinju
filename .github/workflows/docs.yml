@@ -39,10 +39,8 @@ jobs:
           cache: 'npm'
 
       - name: Build
+        # Served from `homepage` in package.json. Changing it rebuilds every version with it.
         run: npm run docs:build:all -- _site
-        env:
-          # The path the site is served from. Changing it rebuilds every version with it.
-          DOCS_SITE_BASE: /jinju/
 
       - name: Upload
         uses: actions/upload-pages-artifact@v5
