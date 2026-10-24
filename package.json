@@ -9,7 +9,7 @@
 		"node",
 		"toolkit"
 	],
-	"homepage": "https://github.com/simmo/jinju#readme",
+	"homepage": "https://simmo.github.io/jinju/",
 	"bugs": "https://github.com/simmo/jinju/issues",
 	"license": "MIT",
 	"author": "Mike Simmonds (https://mike.id)",
@@ -30,6 +30,10 @@
 		"build": "tsdown",
 		"dead-code": "fallow dead-code",
 		"dev": "tsx --watch ./src/example.ts",
+		"docs:build": "vitepress build docs",
+		"docs:build:all": "node scripts/build-docs.ts",
+		"docs:dev": "vitepress dev docs",
+		"docs:preview": "vitepress preview docs",
 		"format:check": "oxfmt --check",
 		"format": "oxfmt",
 		"gen:fallow-badge": "fallow health --format badge > .github/badges/health.svg",
@@ -39,10 +43,11 @@
 		"test": "vitest --project unit",
 		"test:coverage": "vitest run --coverage --project unit",
 		"test:package": "vitest run --project package",
-		"typecheck": "tsc --noEmit --extendedDiagnostics"
+		"typecheck": "tsc --noEmit --extendedDiagnostics && tsc --noEmit -p docs/.vitepress/theme"
 	},
 	"devDependencies": {
 		"@release-it/keep-a-changelog": "^8.0.1",
+		"@shikijs/vitepress-twoslash": "^4.5.0",
 		"@tsconfig/node-lts": "^24.0.1",
 		"@types/node": "^26.6.5",
 		"@vitest/coverage-v8": "^5.0.5",
@@ -53,7 +58,9 @@
 		"tsdown": "^0.23.1",
 		"tsx": "^4.23.15",
 		"typescript": "^6.0.3",
+		"vitepress": "2.0.0-alpha.20",
 		"vitest": "^5.0.5",
+		"vue": "^3.5.44",
 		"zod": "^4.6.7"
 	},
 	"lint-staged": {
@@ -68,7 +75,8 @@
 			"release": true
 		},
 		"npm": {
-			"skipChecks": true
+			"skipChecks": true,
+			"stage": true
 		},
 		"plugins": {
 			"@release-it/keep-a-changelog": {

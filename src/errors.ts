@@ -1,4 +1,4 @@
-/** Base class for every error jinju produces. User `run` handlers may throw these too. */
+/** Base class for every error Jinju produces. User `run` handlers may throw these too. */
 export class JinjuError extends Error {
 	override name = 'JinjuError';
 }

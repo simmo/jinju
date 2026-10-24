@@ -26,10 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tokenizer support for `--x=v`, `--x v`, `-xv`, bundled shorts (`-abc`), negative numbers as values and `--`
 - Error classes extending `JinjuError`; errors are collected and reported together
 - Tooling: `fallow` (with type-aware analysis enabled, and `fallow dead-code` checked in CI), CI tests on Node 22, 24 and 26 (including loading the build with `require()`), coverage checks (100% required), CI summary support and type tests run by `vitest`
-- `AGENTS.md` (imported by `CLAUDE.md`) with contributor guidance for coding agents, including keeping the changelog up to date
+- `AGENTS.md` (imported by `CLAUDE.md`) with contributor guidance for coding agents, including keeping the changelog and documentation up to date
+- Documentation site at https://simmo.github.io/jinju/, built with VitePress: guides and an API reference, with examples type-checked against the source. Docs are versioned: the root is the latest release, `/x.y.z/` each release and `/next/` the newest prerelease, with a version switcher. Every release redeploys it to GitHub Pages
+- Docs tooling: `docs:dev`, `docs:build` and `docs:build:all` scripts, a docs build in CI (catching dead links and broken examples), and a test that every export has an entry in the API reference
 
 ### Changed
 
+- `README.md` is now a short introduction. The full reference has moved to the documentation site, which is also the package's `homepage`
 - Build is ESM-only (`dist/index.js`, `dist/index.d.ts`), built with `tsdown` (rolldown), with `exports` fixed to match the build output
 - Requires Node `>=22.12`. CommonJS projects can `require('jinju')`, which loads the ESM build
 - Replaced `eslint` with `oxlint` and `prettier` with `oxfmt`
@@ -37,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated GitHub Actions `actions/checkout` and `actions/setup-node` to `v7`
 - Releases publish to npm with Trusted Publishing (OIDC) instead of an `NPM_TOKEN` secret, and published versions now carry provenance. Prereleases run from `release.yml` after CI passes on `main`
 - Bump dependencies
+- Releases are staged on npm (`npm stage publish` via trusted publishing) and go live once approved on npmjs.com
 - VSCode config updates
 - Updated LICENSE date
 
