@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Unknown flags in non-strict mode: with `strict: false`, `run` receives the flags a command doesn't define in `unknown`, as given (e.g. `--foo=bar`), so it can pass them on to another tool. `strict` can be set on the program, a scope or a command, and the nearest setting wins
+- Value types `flag.date` / `arg.date` (ISO 8601, as a `Date`), `flag.json` / `arg.json` (any JSON, typed as `JsonValue`) and `flag.entry` / `arg.entry` (`key=value` as a `[key, value]` pair, for `-D key=value`), and `choices` on `flag.number` / `arg.number`, which narrows the type
+- `.multiple({ separator: ',' })` also splits each value, so `--tag a,b` gives two values (also for values from environment variables). Help shows the separator, and `HelpParam` has a `separator` field
 
 ### Fixed
 

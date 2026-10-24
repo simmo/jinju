@@ -23,7 +23,7 @@ command({
 
 ## Creators
 
-Args use the same creators and parsers as [flags](./flags#value-flags): `arg.string`, `arg.number`, `arg.url`, `arg.email`, `arg.directory`, `arg.file`, `arg.custom` and `arg.schema`. There are no switches.
+Args use the same creators and parsers as [flags](./flags#value-flags): `arg.string`, `arg.number`, `arg.url`, `arg.email`, `arg.directory`, `arg.file`, `arg.date`, `arg.json`, `arg.entry`, `arg.custom` and `arg.schema`. There are no switches.
 
 Every arg takes these options:
 

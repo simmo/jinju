@@ -11,11 +11,14 @@ Creators for positional args. See the [Args guide](../guide/args) for usage.
 ```ts
 const arg: {
 	string<C extends string = string, N extends string | undefined = undefined>(options: ArgOptions<N> & StringOptions<C>): Arg<C | undefined, C, N>;
-	number<N>(options: ArgOptions<N> & NumberOptions): Arg<number | undefined, number, N>;
+	number<C extends number = number, N>(options: ArgOptions<N> & NumberOptions<C>): Arg<C | undefined, C, N>;
 	url<N>(options: ArgOptions<N>): Arg<URL | undefined, URL, N>;
 	email<N>(options: ArgOptions<N>): Arg<string | undefined, string, N>;
 	directory<N>(options: ArgOptions<N> & PathOptions): Arg<string | undefined, string, N>;
 	file<N>(options: ArgOptions<N> & PathOptions): Arg<string | undefined, string, N>;
+	date<N>(options: ArgOptions<N>): Arg<Date | undefined, Date, N>;
+	json<N>(options: ArgOptions<N>): Arg<JsonValue | undefined, JsonValue, N>;
+	entry<N>(options: ArgOptions<N>): Arg<[key: string, value: string] | undefined, [key: string, value: string], N>;
 	custom<V, O>(parse: Parse<V, O>, valueName?: string): <N>(options: ArgOptions<N> & O) => Arg<V | undefined, V, N>;
 	schema<S extends StandardSchemaV1>(schema: S, valueName?: string): <N>(options: ArgOptions<N>) => Arg<SchemaOutput<S> | undefined, SchemaOutput<S>, N>;
 };
@@ -32,7 +35,7 @@ class Arg<T, V extends Defined, N extends string | undefined = undefined> extend
 	readonly kind: 'arg';
 	readonly options: ArgOptions<N>;
 	required(required?: boolean): Arg<…>;
-	multiple(allow?: boolean): Arg<…>;
+	multiple(allow?: boolean | MultipleOptions): Arg<…>;
 	default(value: DefaultValue<T, V>): Arg<…>;
 }
 ```

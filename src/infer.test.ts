@@ -3,6 +3,7 @@ import { describe, expect, expectTypeOf, test } from 'vitest';
 import { arg } from './arg';
 import { flag } from './flag';
 import type { InferArgType, InferFlagType } from './infer';
+import type { JsonValue } from './value';
 
 const d = { description: 'd' };
 const url = new URL('https://example.com');
@@ -55,6 +56,40 @@ describe('InferFlagType', () => {
 
 		// @ts-expect-error not a choice
 		base.default('c');
+	});
+
+	test('number choices', () => {
+		const base = flag.number({ ...d, choices: [1, 2, 4] });
+		expectTypeOf<InferFlagType<typeof base>>().toEqualTypeOf<1 | 2 | 4 | undefined>();
+		const withDefault = base.default(2);
+		expectTypeOf<InferFlagType<typeof withDefault>>().toEqualTypeOf<1 | 2 | 4>();
+		const plain = flag.number({ ...d, min: 1 });
+		expectTypeOf<InferFlagType<typeof plain>>().toEqualTypeOf<number | undefined>();
+
+		// @ts-expect-error not a choice
+		base.default(3);
+	});
+
+	test('date, json and entry', () => {
+		const date = flag.date(d);
+		expectTypeOf<InferFlagType<typeof date>>().toEqualTypeOf<Date | undefined>();
+		const json = flag.json(d).required();
+		expectTypeOf<InferFlagType<typeof json>>().toEqualTypeOf<JsonValue>();
+		const jsonMany = flag.json(d).multiple();
+		expectTypeOf<InferFlagType<typeof jsonMany>>().toEqualTypeOf<JsonValue[] | undefined>();
+		const defines = flag.entry(d).multiple();
+		expectTypeOf<InferFlagType<typeof defines>>().toEqualTypeOf<
+			[key: string, value: string][] | undefined
+		>();
+		const one = flag.entry(d).default(['a', 'b']);
+		expectTypeOf<InferFlagType<typeof one>>().toEqualTypeOf<[key: string, value: string]>();
+	});
+
+	test('a separator keeps the multiple type', () => {
+		const tags = flag.string(d).multiple({ separator: ',' });
+		expectTypeOf<InferFlagType<typeof tags>>().toEqualTypeOf<string[] | undefined>();
+		const required = arg.number(d).required().multiple({ separator: ',' });
+		expectTypeOf<InferArgType<typeof required>>().toEqualTypeOf<number[]>();
 	});
 
 	test('modifier toggles', () => {

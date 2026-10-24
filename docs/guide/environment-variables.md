@@ -35,7 +35,7 @@ error: Invalid value 'abc' for --port (from $PORT): must be a number
 - `flag.boolean` accepts `true`/`false`, `1`/`0`, `yes`/`no` and `on`/`off`, in any case.
 - `flag.count` accepts a whole number: `VERBOSE=2`.
 - Empty values (`API_TOKEN=`) count as unset.
-- A `.multiple()` flag gets a single value from its variable.
+- A `.multiple()` flag gets a single value from its variable, unless it has a separator: with `.multiple({ separator: ',' })`, `TAGS=a,b` gives `['a', 'b']`.
 
 ## Help
 

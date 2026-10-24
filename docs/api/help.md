@@ -140,14 +140,15 @@ interface HelpParam {
 	type: string;
 	required: boolean;
 	multiple: boolean;
+	separator?: string;
 	hasDefault: boolean;
 	default: unknown;
-	choices?: readonly string[];
+	choices?: readonly (string | number)[];
 	options: Readonly<Record<string, unknown>>;
 }
 ```
 
-Details shared by args and flags. `type` is the value type's name, e.g. `string`, `url`, or `boolean`/`count` for switches. `default` is the raw default value, only meaningful when `hasDefault`. `options` is everything passed to the creator.
+Details shared by args and flags. `type` is the value type's name, e.g. `string`, `url`, or `boolean`/`count` for switches. `separator` is what each value of a `multiple` param is split on, if anything. `default` is the raw default value, only meaningful when `hasDefault`. `options` is everything passed to the creator.
 
 ## `HelpArg`
 

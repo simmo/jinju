@@ -23,6 +23,23 @@ describe('modifiers', () => {
 		expect(b.state).toMatchObject({ required: false, hasDefault: true });
 	});
 
+	test('multiple takes a separator, which only that call sets', () => {
+		const tags = flag.string(d).multiple({ separator: ',' });
+		const split = toParam(tags);
+		expect(split.state).toEqual({
+			required: false,
+			multiple: true,
+			hasDefault: false,
+			separator: ',',
+		});
+		expect(toParam(flag.string(d).multiple({})).state.separator).toBeUndefined();
+		expect(toParam(tags.multiple()).state).not.toHaveProperty('separator');
+		expect(toParam(tags.multiple(false)).state).not.toHaveProperty('separator');
+		expect(() => flag.string(d).multiple({ separator: '' })).toThrow(
+			'A separator must not be empty',
+		);
+	});
+
 	test('multiple converts an existing default', () => {
 		const many = toParam(flag.string(d).default('a').multiple());
 		expect(many.defaultValue).toEqual(['a']);
@@ -44,6 +61,19 @@ describe('resolve', () => {
 			ok: true,
 			value: [1, 2],
 		});
+	});
+
+	test('a separator splits, trims and drops empty values', async () => {
+		const tags = flag.string(d).multiple({ separator: ',' });
+		expect(await resolve(tags, ['a,b', ' c , ,d ', 'e'])).toEqual({
+			ok: true,
+			value: ['a', 'b', 'c', 'd', 'e'],
+		});
+		expect(await resolve(tags.default(['x']), [','])).toEqual({ ok: true, value: ['x'] });
+		const invalid = await resolve(flag.number(d).multiple({ separator: ',' }), ['1,x']);
+		expect(invalid.ok || invalid.errors[0]!.message).toBe(
+			"Invalid value 'x' for --x: must be a number",
+		);
 	});
 
 	test('default arrays are copied', async () => {

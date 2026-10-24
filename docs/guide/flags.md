@@ -24,16 +24,19 @@ command({
 
 These take a value, written as `--name value`, `--name=value`, `-n value` or `-nvalue`:
 
-| Creator                      | Type              | Options                    | Notes                                              |
-| ---------------------------- | ----------------- | -------------------------- | -------------------------------------------------- |
-| `flag.string(options)`       | `string`          | `choices?`                 | With `choices`, the type is the union of them      |
-| `flag.number(options)`       | `number`          | `min?`, `max?`, `integer?` | Rejects non-numbers, and values outside the bounds |
-| `flag.url(options)`          | `URL`             |                            | Parsed with `new URL()`                            |
-| `flag.email(options)`        | `string`          |                            | Checks the value looks like an email address       |
-| `flag.directory(options)`    | `string`          | `exists?`                  | Resolved to an absolute path                       |
-| `flag.file(options)`         | `string`          | `exists?`                  | Resolved to an absolute path                       |
-| `flag.custom(parse, name?)`  | Your parser's     | Your parser's options      | See [custom parsers](#custom-parsers)              |
-| `flag.schema(schema, name?)` | The schema output |                            | See [Standard Schema](./schemas)                   |
+| Creator                      | Type              | Options                                | Notes                                                         |
+| ---------------------------- | ----------------- | -------------------------------------- | ------------------------------------------------------------- |
+| `flag.string(options)`       | `string`          | `choices?`                             | With `choices`, the type is the union of them                 |
+| `flag.number(options)`       | `number`          | `min?`, `max?`, `integer?`, `choices?` | Rejects non-numbers, and values outside the bounds or choices |
+| `flag.url(options)`          | `URL`             |                                        | Parsed with `new URL()`                                       |
+| `flag.email(options)`        | `string`          |                                        | Checks the value looks like an email address                  |
+| `flag.directory(options)`    | `string`          | `exists?`                              | Resolved to an absolute path                                  |
+| `flag.file(options)`         | `string`          | `exists?`                              | Resolved to an absolute path                                  |
+| `flag.date(options)`         | `Date`            |                                        | An ISO 8601 date, or date and time                            |
+| `flag.json(options)`         | `JsonValue`       |                                        | Parsed with `JSON.parse`                                      |
+| `flag.entry(options)`        | `[key, value]`    |                                        | `key=value`, split at the first `=`                           |
+| `flag.custom(parse, name?)`  | Your parser's     | Your parser's options                  | See [custom parsers](#custom-parsers)                         |
+| `flag.schema(schema, name?)` | The schema output |                                        | See [Standard Schema](./schemas)                              |
 
 `choices` narrows the type:
 
@@ -45,7 +48,31 @@ type Mode = InferFlagType<typeof mode>;
 //   ^?
 ```
 
+`flag.number` takes `choices` too: `choices: [1, 2, 4]` gives the type `1 | 2 | 4`.
+
 With `exists: true`, `flag.directory` and `flag.file` also check that the path exists and is the right kind of entry.
+
+### Dates, JSON and key-value pairs
+
+`flag.date` reads an ISO 8601 date (`2026-10-25`) or date and time (`2026-10-25T14:30`, optionally with seconds and a `Z` or `+01:00` offset) into a `Date`. As with `new Date()`, a date alone is midnight UTC, and a time without an offset is local time. Dates that don't exist, such as `2026-02-30`, are rejected.
+
+`flag.json` parses its value with `JSON.parse`, so its type is [`JsonValue`](../api/types#jsonvalue), which covers any JSON. To check the value's shape and get a narrower type, use a [schema](./schemas) that parses JSON instead.
+
+`flag.entry` reads `key=value` into a `[key, value]` pair, split at the first `=`, so the value can contain `=` and can be empty. With `.multiple()` and a one-letter alias, it gives the familiar `-D` style, and `Object.fromEntries` turns the pairs into an object:
+
+```ts twoslash
+import { command, flag } from 'jinju';
+
+command({
+	description: 'Build',
+	flags: { define: flag.entry({ alias: 'D', description: 'Define a variable' }).multiple() },
+	run: ({ flags }) => {
+		const defines = Object.fromEntries(flags.define ?? []);
+		//    ^?
+	},
+});
+// -D mode=fast -Dlevel=2 → { mode: 'fast', level: '2' }
+```
 
 ## Switches
 
@@ -75,11 +102,12 @@ Every flag creator takes these options:
 
 Flags are immutable: each modifier returns a new flag, so one definition can be reused with different settings.
 
-| Modifier               | Effect                                                                            |
-| ---------------------- | --------------------------------------------------------------------------------- |
-| `.required(on = true)` | Must be provided. Clears any default.                                             |
-| `.multiple(on = true)` | Repeatable, collected into an array. Converts any existing default (`v` ↔ `[v]`). |
-| `.default(value)`      | Used when absent. Clears `required`. Must be a non-empty array when `multiple`.   |
+| Modifier                   | Effect                                                                            |
+| -------------------------- | --------------------------------------------------------------------------------- |
+| `.required(on = true)`     | Must be provided. Clears any default.                                             |
+| `.multiple(on = true)`     | Repeatable, collected into an array. Converts any existing default (`v` ↔ `[v]`). |
+| `.multiple({ separator })` | Like `.multiple()`, and each value is also split on `separator`: `--tag a,b`.     |
+| `.default(value)`          | Used when absent. Clears `required`. Must be a non-empty array when `multiple`.   |
 
 Switches only have `.default(value)`.
 
@@ -110,6 +138,8 @@ command({
 ```
 
 A `.multiple()` flag is repeated on the command line (`-t a -t b`). Giving a flag that isn't `.multiple()` more than once is an error.
+
+With a separator, each value is also split: with `tag.multiple({ separator: ',' })`, `-t a,b -t c` gives `['a', 'b', 'c']`. Values are trimmed and empty ones dropped, and help shows the flag as `(multiple, separated by ',')`. The separator also splits a value read from an [environment variable](./environment-variables), such as `TAGS=a,b`. The type is the same as with `.multiple()`.
 
 ## Custom parsers
 

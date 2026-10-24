@@ -1,4 +1,5 @@
 import {
+	ConfigError,
 	DuplicateFlagError,
 	InvalidValueError,
 	type JinjuError,
@@ -17,6 +18,17 @@ export interface ParamState {
 	readonly required: boolean;
 	readonly multiple: boolean;
 	readonly hasDefault: boolean;
+	/** Splits each input into several values, e.g. `','` for `--tag a,b`. Only when `multiple`. */
+	readonly separator?: string;
+}
+
+/** Options for `.multiple()`. */
+export interface MultipleOptions {
+	/**
+	 * Also split each value on this string: with `','`, `--tag a,b` is two values. Values
+	 * are trimmed, and empty ones dropped. Applies to environment variables too.
+	 */
+	separator?: string;
 }
 
 /**
@@ -40,7 +52,7 @@ export interface ParamOptions {
 	alias?: string;
 	hidden?: boolean;
 	name?: string;
-	choices?: readonly string[];
+	choices?: readonly (string | number)[];
 	env?: string;
 }
 
@@ -80,8 +92,17 @@ export abstract class Param<T = unknown, V = unknown> {
 	}
 
 	/** Parses raw input strings into the param's final value, applying modifiers. */
-	async resolve(inputs: readonly string[], label: string): Promise<Result<unknown>> {
-		const { hasDefault, multiple, required } = this.state;
+	async resolve(given: readonly string[], label: string): Promise<Result<unknown>> {
+		const { hasDefault, multiple, required, separator } = this.state;
+		const inputs =
+			separator === undefined
+				? given
+				: given.flatMap((input) =>
+						input
+							.split(separator)
+							.map((value) => value.trim())
+							.filter((value) => value !== ''),
+					);
 
 		if (inputs.length === 0) {
 			if (hasDefault) {
@@ -118,12 +139,19 @@ export abstract class Param<T = unknown, V = unknown> {
 	}
 
 	/** Collects values into an array, converting an existing default between `v` and `[v]`. */
-	protected setMultiple(allow: boolean): this {
+	protected setMultiple(allow: boolean | MultipleOptions): this {
+		const multiple = allow !== false;
+		const separator = typeof allow === 'object' ? allow.separator : undefined;
+		if (separator === '') throw new ConfigError('A separator must not be empty');
 		let defaultValue = this.defaultValue;
-		if (this.state.hasDefault && allow !== this.state.multiple) {
-			defaultValue = allow ? [defaultValue] : (defaultValue as unknown[])[0];
+		if (this.state.hasDefault && multiple !== this.state.multiple) {
+			defaultValue = multiple ? [defaultValue] : (defaultValue as unknown[])[0];
 		}
-		return this.with({ ...this.state, multiple: allow }, defaultValue);
+		const { separator: _, ...state } = this.state;
+		return this.with(
+			{ ...state, multiple, ...(separator === undefined ? {} : { separator }) },
+			defaultValue,
+		);
 	}
 
 	/** Uses `value` when absent. Clears `required`. */

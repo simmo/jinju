@@ -365,6 +365,17 @@ describe('HelpTemplate', () => {
 		expect(help(context, new Names())).toBe('alpha zeta\n');
 	});
 
+	test('tags show separators and number choices', () => {
+		const tags = flag.string({ description: 'Tags' }).multiple({ separator: ',' });
+		const level = flag.number({ description: 'Level', choices: [1, 2, 3] });
+		const cmd = command({ description: 'x', flags: { tags, level }, run: () => {} });
+		const page = help({ command: cmd });
+		expect(page).toContain("--tags <string>   Tags (multiple, separated by ',')");
+		expect(page).toContain('--level <number>  Level (choices: 1, 2, 3)');
+		const data = helpData({ program, path: [], subcommands: [], command: cmd });
+		expect(data.flags.find((entry) => entry.name === 'tags')).toMatchObject({ separator: ',' });
+	});
+
 	test('tags include env, after the default', () => {
 		const port = flag.number({ description: 'Port', env: 'PORT' }).default(80);
 		const debug = flag.boolean({ description: 'Debug', env: 'DEBUG' });

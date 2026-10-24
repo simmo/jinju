@@ -226,6 +226,49 @@ describe('globals', () => {
 	});
 });
 
+describe('value types', () => {
+	const build = command({
+		description: 'Build',
+		args: [arg.date({ name: 'since', description: 'Since' })],
+		flags: {
+			define: flag.entry({ alias: 'D', description: 'Define' }).multiple(),
+			tags: flag.string({ description: 'Tags', env: 'TAGS' }).multiple({ separator: ',' }),
+			config: flag.json({ description: 'Config' }),
+		},
+		run: noop,
+	});
+
+	test('parse from the command line', async () => {
+		const result = await build.parse(
+			[
+				'2026-10-25',
+				'-Dmode=fast',
+				'-D',
+				'level=2',
+				'--tags=a,b',
+				'--tags',
+				'c',
+				'--config={"a":1}',
+			],
+			{ env: {} },
+		);
+		expect(result.ok && result.value.args).toEqual([new Date('2026-10-25')]);
+		expect(result.ok && result.value.flags).toEqual({
+			define: [
+				['mode', 'fast'],
+				['level', '2'],
+			],
+			tags: ['a', 'b', 'c'],
+			config: { a: 1 },
+		});
+	});
+
+	test('a separator also splits environment variables', async () => {
+		const result = await build.parse([], { env: { TAGS: 'x, y' } });
+		expect(result.ok && result.value.flags.tags).toEqual(['x', 'y']);
+	});
+});
+
 describe('env', () => {
 	const deploy = command({
 		description: 'Deploy',

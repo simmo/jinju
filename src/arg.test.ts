@@ -14,6 +14,9 @@ describe('creators', () => {
 		['email', arg.email(d)],
 		['directory', arg.directory(d)],
 		['file', arg.file(d)],
+		['date', arg.date(d)],
+		['json', arg.json(d)],
+		['key=value', arg.entry(d)],
 	])('%s is an optional arg', (name, created) => {
 		const param = toParam(created);
 		expect(param.kind).toBe('arg');

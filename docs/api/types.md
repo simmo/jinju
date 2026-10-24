@@ -131,7 +131,7 @@ interface ParamOptions {
 	alias?: string;
 	hidden?: boolean;
 	name?: string;
-	choices?: readonly string[];
+	choices?: readonly (string | number)[];
 	env?: string;
 }
 ```
@@ -145,10 +145,21 @@ interface ParamState {
 	readonly required: boolean;
 	readonly multiple: boolean;
 	readonly hasDefault: boolean;
+	readonly separator?: string;
 }
 ```
 
-The modifier state at runtime. At the type level, it's derived from `T` and `V`.
+The modifier state at runtime. At the type level, it's derived from `T` and `V`. `separator` is set by `.multiple({ separator })`.
+
+### `MultipleOptions`
+
+```ts
+interface MultipleOptions {
+	separator?: string;
+}
+```
+
+What `.multiple()` accepts instead of a boolean. With a `separator`, each value is also split on it: `--tag a,b` is two values. Values are trimmed and empty ones dropped, and values from environment variables are split too. An empty separator is a `ConfigError`.
 
 ### `ParamInit`
 
@@ -235,12 +246,15 @@ interface StringOptions<C extends string = string> {
 ### `NumberOptions`
 
 ```ts
-interface NumberOptions {
+interface NumberOptions<C extends number = number> {
+	choices?: readonly C[];
 	min?: number;
 	max?: number;
 	integer?: boolean;
 }
 ```
+
+`choices` restricts input to these values, and the type is their union.
 
 ### `PathOptions`
 
@@ -251,6 +265,14 @@ interface PathOptions {
 ```
 
 `exists` checks the path exists and is the right kind of entry (file or directory).
+
+### `JsonValue`
+
+```ts
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+```
+
+Any value JSON can represent. What `flag.json` and `arg.json` parse to.
 
 ## Standard Schema
 

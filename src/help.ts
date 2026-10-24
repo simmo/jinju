@@ -36,10 +36,12 @@ export interface HelpParam {
 	type: string;
 	required: boolean;
 	multiple: boolean;
+	/** What each value of a `multiple` param is split on, e.g. `','`. */
+	separator?: string;
 	hasDefault: boolean;
 	/** The raw default value (e.g. a `URL`); only meaningful when `hasDefault`. */
 	default: unknown;
-	choices?: readonly string[];
+	choices?: readonly (string | number)[];
 	/**
 	 * Everything passed to the creator, including type-specific options such as `min`,
 	 * `max`, `integer` or `exists`, and options of custom parsers.
@@ -127,6 +129,7 @@ const helpParam = (param: Param): HelpParam => ({
 	type: param.value.name,
 	required: param.state.required,
 	multiple: param.state.multiple,
+	...(param.state.separator === undefined ? {} : { separator: param.state.separator }),
 	hasDefault: param.state.hasDefault,
 	default: param.defaultValue,
 	...(param.options.choices ? { choices: param.options.choices } : {}),
@@ -301,7 +304,9 @@ export class HelpTemplate {
 	formatTags(param: HelpArg | HelpFlag): string {
 		const tags: string[] = [];
 		if (param.required) tags.push('required');
-		if (param.multiple) tags.push('multiple');
+		if (param.multiple) {
+			tags.push(param.separator ? `multiple, separated by '${param.separator}'` : 'multiple');
+		}
 		if (param.choices) tags.push(`choices: ${param.choices.join(', ')}`);
 		const isSwitch = 'kind' in param && param.kind === 'switch';
 		if (param.hasDefault && !isSwitch) tags.push(`default: ${this.formatValue(param.default)}`);
