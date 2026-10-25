@@ -73,6 +73,9 @@
 		"node": ">=22.12"
 	},
 	"release-it": {
+		"hooks": {
+			"before:git:release": "npx oxfmt CHANGELOG.md && git add CHANGELOG.md"
+		},
 		"github": {
 			"release": true
 		},
