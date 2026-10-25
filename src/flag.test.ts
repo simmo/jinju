@@ -24,7 +24,7 @@ describe('value flags', () => {
 			created
 				.required()
 				.multiple()
-				.default(['x'] as never),
+				.default('x' as never),
 		).toBeInstanceOf(Flag);
 		const param = toParam(created);
 		expect(param.kind).toBe('flag');

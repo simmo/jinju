@@ -10,8 +10,8 @@ Creators for flags and switches. See the [Flags guide](../guide/flags) for usage
 
 ```ts
 const flag: {
-	string<C extends string = string>(options: FlagOptions & StringOptions<C>): Flag<C | undefined, C>;
-	number<C extends number = number>(options: FlagOptions & NumberOptions<C>): Flag<C | undefined, C>;
+	string<const C extends string = string>(options: FlagOptions & StringOptions<C>): Flag<NoInfer<C> | undefined, NoInfer<C>>;
+	number<const C extends number = number>(options: FlagOptions & NumberOptions<C>): Flag<NoInfer<C> | undefined, NoInfer<C>>;
 	url(options: FlagOptions): Flag<URL | undefined, URL>;
 	email(options: FlagOptions): Flag<string | undefined, string>;
 	directory(options: FlagOptions & PathOptions): Flag<string | undefined, string>;
@@ -50,17 +50,21 @@ A flag that takes a value. `T` is the resolved type (e.g. `string[] | undefined`
 class Flag<T, V extends Defined> extends Param<T, V> {
 	readonly kind: 'flag';
 	readonly options: FlagOptions;
-	required(required?: boolean): Flag<…>;
-	multiple(allow?: boolean | MultipleOptions): Flag<…>;
-	default(value: DefaultValue<T, V>): Flag<…>;
+	required<R extends boolean = true>(
+		required?: R,
+	): Flag<Exclude<T, undefined> | (R extends true ? never : undefined), V>;
+	multiple<M extends boolean | MultipleOptions = true>(
+		allow?: M,
+	): Flag<(M extends false ? V : V[]) | (undefined extends T ? undefined : never), V>;
+	default(...values: DefaultValues<T, V>): Flag<Exclude<T, undefined>, V>;
 }
 ```
 
-| Method            | Effect                                                                                                                                                                       |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.required(on?)`  | Must be provided. Clears any default.                                                                                                                                        |
-| `.multiple(on?)`  | Repeatable, collected into an array. Converts any existing default (`v` ↔ `[v]`). Pass [`MultipleOptions`](./types#multipleoptions) to also split each value on a separator. |
-| `.default(value)` | Used when absent. Clears `required`. Must be a non-empty array when `multiple`.                                                                                              |
+| Method                | Effect                                                                                                                                                                                         |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.required(on?)`      | Must be provided. Clears any default.                                                                                                                                                          |
+| `.multiple(on?)`      | Repeatable, collected into an array. Pass [`MultipleOptions`](./types#multipleoptions) to also split each value on a separator.                                                                |
+| `.default(...values)` | Used when absent: one value, or one or more when `multiple`, each its own argument. Clears `required`. Modifiers work in any order: all the values are kept, and a single flag uses the first. |
 
 Each returns a new flag: flags are immutable.
 

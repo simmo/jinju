@@ -1,4 +1,5 @@
-import { type Defined, type DefaultValue, type IsMultiple, Param } from './param';
+import { ConfigError } from './errors';
+import { type Defined, type DefaultValues, Param } from './param';
 import {
 	type CheckSchemaInput,
 	type SchemaOutput,
@@ -41,24 +42,32 @@ export class Arg<T, V extends Defined, N extends string | undefined = undefined>
 	/** Must be provided. Clears any default. */
 	required<R extends boolean = true>(
 		required: R = true as R,
-	): Arg<(IsMultiple<T, V> extends true ? V[] : V) | (R extends true ? never : undefined), V, N> {
+	): Arg<Exclude<T, undefined> | (R extends true ? never : undefined), V, N> {
 		// Same runtime class; only the type parameters change.
 		return this.setRequired(required) as never;
 	}
 
 	/**
-	 * Accept several values, one per word, collected into an array. Converts any default.
+	 * Accept several values, one per word, collected into an array.
 	 * Unlike flags, args take no separator: the words already separate the values.
 	 */
 	multiple<M extends boolean = true>(
 		allow: M = true as M,
 	): Arg<(M extends false ? V : V[]) | (undefined extends T ? undefined : never), V, N> {
+		// The type allows only booleans; this stops options passed from JavaScript.
+		// `setMultiple` rejects other non-booleans.
+		if (typeof allow === 'object' && allow !== null) {
+			throw new ConfigError("Args don't take a separator");
+		}
 		return this.setMultiple(allow) as never;
 	}
 
-	/** Value used when absent. Clears `required`. */
-	default(value: DefaultValue<T, V>): Arg<IsMultiple<T, V> extends true ? V[] : V, V, N> {
-		return this.setDefault(value) as never;
+	/**
+	 * Values used when absent: `.default('x')`, or `.default('a', 'b')` for a `multiple` one.
+	 * Each argument is one value, even an array (e.g. an `entry` pair). Clears `required`.
+	 */
+	default(...values: DefaultValues<T, V>): Arg<Exclude<T, undefined>, V, N> {
+		return this.setDefault(values) as never;
 	}
 }
 

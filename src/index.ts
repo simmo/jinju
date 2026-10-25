@@ -51,7 +51,7 @@ export type {
 	StandardSchemaV1,
 } from './schema';
 export type {
-	DefaultValue,
+	DefaultValues,
 	Defined,
 	IsMultiple,
 	MultipleOptions,

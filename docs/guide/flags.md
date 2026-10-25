@@ -102,14 +102,18 @@ Every flag creator takes these options:
 
 Flags are immutable: each modifier returns a new flag, so one definition can be reused with different settings.
 
-| Modifier                   | Effect                                                                            |
-| -------------------------- | --------------------------------------------------------------------------------- |
-| `.required(on = true)`     | Must be provided. Clears any default.                                             |
-| `.multiple(on = true)`     | Repeatable, collected into an array. Converts any existing default (`v` ↔ `[v]`). |
-| `.multiple({ separator })` | Like `.multiple()`, and each value is also split on `separator`: `--tag a,b`.     |
-| `.default(value)`          | Used when absent. Clears `required`. Must be a non-empty array when `multiple`.   |
+| Modifier                   | Effect                                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------------------------- |
+| `.required(on = true)`     | Must be provided. Clears any default.                                                          |
+| `.multiple(on = true)`     | Repeatable, collected into an array.                                                           |
+| `.multiple({ separator })` | Like `.multiple()`, and each value is also split on `separator`: `--tag a,b`.                  |
+| `.default(...values)`      | Used when absent: `.default('x')`, or `.default('a', 'b')` when `multiple`. Clears `required`. |
 
 Switches only have `.default(value)`.
+
+Each argument to `.default()` is one value, so an array is one value of an array type: `flag.entry(o).multiple().default(['a', '1'], ['b', '2'])` is two entries. Modifiers work in any order. A flag keeps all its default values, and a single flag uses the first: `.default('a', 'b').multiple()` and `.multiple().default('a', 'b')` both give `['a', 'b']`.
+
+`.multiple(on)` with a `boolean` variable gives `V | V[]`, since the type can't know which, and `.required()` and `.default()` keep both.
 
 The modifiers decide the type `run` receives:
 
@@ -118,6 +122,7 @@ The modifiers decide the type `run` receives:
 | `flag.url(o)`                           | `URL \| undefined`        |
 | `flag.url(o).multiple()`                | `URL[] \| undefined`      |
 | `flag.url(o).default(url)`              | `URL`                     |
+| `flag.url(o).multiple().default(a, b)`  | `URL[]`                   |
 | `flag.url(o).required().multiple()`     | `URL[]`                   |
 | `flag.string({choices: ['a', 'b'], …})` | `'a' \| 'b' \| undefined` |
 
@@ -129,7 +134,7 @@ const tag = flag.string({ alias: 't', description: 'Tag to apply' });
 command({
 	description: 'Publish',
 	flags: {
-		tag: tag.multiple().default(['latest']),
+		tag: tag.multiple().default('latest'),
 		registry: flag.url({ description: 'Registry' }).required(),
 	},
 	run: ({ flags }) => {},
@@ -139,7 +144,7 @@ command({
 
 A `.multiple()` flag is repeated on the command line (`-t a -t b`). Giving a flag that isn't `.multiple()` more than once is an error.
 
-With a separator, each value is also split: with `tag.multiple({ separator: ',' })`, `-t a,b -t c` gives `['a', 'b', 'c']`. Values are trimmed and empty ones dropped, and help shows the flag as `(multiple, separated by ',')`. The separator also splits a value read from an [environment variable](./environment-variables), such as `TAGS=a,b`. The type is the same as with `.multiple()`.
+With a separator, each value is also split: with `tag.multiple({ separator: ',' })`, `-t a,b -t c` gives `['a', 'b', 'c']`. Values are trimmed and empty ones dropped, and a value with nothing left, such as `-t ,`, is an error. The split happens before each value is parsed, so pick a separator that can't appear inside a value: `,` would break up `flag.json` or `flag.entry` values that contain commas. Help shows the flag as `(multiple, separated by ',')`. The separator also splits a value read from an [environment variable](./environment-variables), such as `TAGS=a,b`. The type is the same as with `.multiple()`.
 
 ## Custom parsers
 

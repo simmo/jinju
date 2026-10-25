@@ -1,7 +1,6 @@
 import {
 	type Defined,
-	type DefaultValue,
-	type IsMultiple,
+	type DefaultValues,
 	type MultipleOptions,
 	Param,
 	type ParamInit,
@@ -52,13 +51,13 @@ export class Flag<T, V extends Defined> extends Param<T, V> {
 	/** Must be provided. Clears any default. */
 	required<R extends boolean = true>(
 		required: R = true as R,
-	): Flag<(IsMultiple<T, V> extends true ? V[] : V) | (R extends true ? never : undefined), V> {
+	): Flag<Exclude<T, undefined> | (R extends true ? never : undefined), V> {
 		// Same runtime class; only the type parameters change.
 		return this.setRequired(required) as never;
 	}
 
 	/**
-	 * Accept repeated values, collected into an array. Converts any default. Pass
+	 * Accept repeated values, collected into an array. Pass
 	 * `{ separator: ',' }` to also split each value: `--tag a,b`.
 	 */
 	multiple<M extends boolean | MultipleOptions = true>(
@@ -67,9 +66,12 @@ export class Flag<T, V extends Defined> extends Param<T, V> {
 		return this.setMultiple(allow) as never;
 	}
 
-	/** Value used when absent. Clears `required`. */
-	default(value: DefaultValue<T, V>): Flag<IsMultiple<T, V> extends true ? V[] : V, V> {
-		return this.setDefault(value) as never;
+	/**
+	 * Values used when absent: `.default('x')`, or `.default('a', 'b')` for a `multiple` one.
+	 * Each argument is one value, even an array (e.g. an `entry` pair). Clears `required`.
+	 */
+	default(...values: DefaultValues<T, V>): Flag<Exclude<T, undefined>, V> {
+		return this.setDefault(values) as never;
 	}
 }
 
@@ -86,7 +88,7 @@ export class Switch<T> extends Param<T, T> {
 
 	/** Value used when the switch is absent. */
 	default(value: T): Switch<T> {
-		return this.setDefault(value);
+		return this.setDefault([value]);
 	}
 
 	/** Resolves from occurrences: `--x` → `true`, `--no-x` → `false`. */
@@ -115,7 +117,7 @@ const toggle = <V>(valueName: string, initial: V, reduce: Toggle<V>, parse: Pars
 		// Switches don't take values on the command line; `parse` reads them from `env`.
 		const value = { name: valueName, parse: (input: string) => parse(input, {}) };
 		const state = { required: false, multiple: false, hasDefault: true };
-		return new Switch<V>({ value, options, state, defaultValue: initial, toggle: reduce });
+		return new Switch<V>({ value, options, state, defaults: [initial], toggle: reduce });
 	};
 };
 

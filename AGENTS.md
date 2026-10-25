@@ -9,7 +9,7 @@ Every change that affects users, the public API, the build or tooling must updat
 - Add entries under `## [Unreleased]`, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Use these subheadings, in this order, creating them as needed: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 - Write one line per change, from a user's point of view. Wrap API names in backticks.
-- Breaking changes go under `Changed` or `Removed` and must say what to do instead.
+- Breaking changes go under `Changed` or `Removed`, start with `**Breaking:**`, come before the other entries in their section, and must say what to do instead.
 - If a change revises something already listed under `[Unreleased]`, edit that entry. Don't add a second one.
 - Never edit released sections (`## [x.y.z]`). Release tooling (`release-it` with `keep-a-changelog`) moves `[Unreleased]` into a version.
 - Skip the changelog only for changes with no external effect, such as test-only edits or internal refactors. Say so when reporting the change.

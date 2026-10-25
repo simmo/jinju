@@ -18,7 +18,7 @@ describe('InferFlagType', () => {
 		expectTypeOf<InferFlagType<typeof multiple>>().toEqualTypeOf<URL[] | undefined>();
 		const withDefault = base.default(url);
 		expectTypeOf<InferFlagType<typeof withDefault>>().toEqualTypeOf<URL>();
-		const multipleDefault = base.multiple().default([url]);
+		const multipleDefault = base.multiple().default(url);
 		expectTypeOf<InferFlagType<typeof multipleDefault>>().toEqualTypeOf<URL[]>();
 		const required = base.required();
 		expectTypeOf<InferFlagType<typeof required>>().toEqualTypeOf<URL>();
@@ -33,7 +33,7 @@ describe('InferFlagType', () => {
 		expectTypeOf<InferFlagType<typeof multiple>>().toEqualTypeOf<string[] | undefined>();
 		const withDefault = base.default('default');
 		expectTypeOf<InferFlagType<typeof withDefault>>().toEqualTypeOf<string>();
-		const multipleDefault = base.multiple().default(['default']);
+		const multipleDefault = base.multiple().default('default');
 		expectTypeOf<InferFlagType<typeof multipleDefault>>().toEqualTypeOf<string[]>();
 		const required = base.required();
 		expectTypeOf<InferFlagType<typeof required>>().toEqualTypeOf<string>();
@@ -48,7 +48,7 @@ describe('InferFlagType', () => {
 		expectTypeOf<InferFlagType<typeof multiple>>().toEqualTypeOf<('a' | 'b')[] | undefined>();
 		const withDefault = base.default('a');
 		expectTypeOf<InferFlagType<typeof withDefault>>().toEqualTypeOf<'a' | 'b'>();
-		const multipleDefault = base.multiple().default(['a']);
+		const multipleDefault = base.multiple().default('a');
 		expectTypeOf<InferFlagType<typeof multipleDefault>>().toEqualTypeOf<('a' | 'b')[]>();
 		const required = base.required();
 		expectTypeOf<InferFlagType<typeof required>>().toEqualTypeOf<'a' | 'b'>();
@@ -90,8 +90,10 @@ describe('InferFlagType', () => {
 		const tags = flag.string(d).multiple({ separator: ',' });
 		expectTypeOf<InferFlagType<typeof tags>>().toEqualTypeOf<string[] | undefined>();
 
-		// @ts-expect-error args take no separator
-		arg.string(d).multiple({ separator: ',' });
+		expect(() =>
+			// @ts-expect-error args take no separator
+			arg.string(d).multiple({ separator: ',' }),
+		).toThrow("Args don't take a separator");
 	});
 
 	test('modifier toggles', () => {
@@ -116,13 +118,39 @@ describe('InferFlagType', () => {
 		expectTypeOf<InferFlagType<typeof required>>().toEqualTypeOf<URL | URL[]>();
 		const args = arg.url(d).multiple(on);
 		expectTypeOf<InferArgType<typeof args>>().toEqualTypeOf<URL | URL[] | undefined>();
+
+		// Later modifiers keep both shapes.
+		const thenRequired = flag.url(d).multiple(on).required();
+		expectTypeOf<InferFlagType<typeof thenRequired>>().toEqualTypeOf<URL | URL[]>();
+		const thenOptional = flag.url(d).multiple(on).required(false);
+		expectTypeOf<InferFlagType<typeof thenOptional>>().toEqualTypeOf<URL | URL[] | undefined>();
+		// Defaults work in any order: they're kept as a list, and a single param uses the first.
+		const thenDefault = flag.url(d).multiple(on).default(url, url);
+		expectTypeOf<InferFlagType<typeof thenDefault>>().toEqualTypeOf<URL | URL[]>();
+		const defaultFirst = flag.url(d).default(url).multiple(on);
+		expectTypeOf<InferFlagType<typeof defaultFirst>>().toEqualTypeOf<URL | URL[]>();
+		const json = flag.json(d).default([1, 2]);
+		expectTypeOf<InferFlagType<typeof json>>().toEqualTypeOf<JsonValue>();
+		const argRequired = arg.url(d).multiple(on).required();
+		expectTypeOf<InferArgType<typeof argRequired>>().toEqualTypeOf<URL | URL[]>();
+		const argDefault = arg.url(d).multiple(on).default(url);
+		expectTypeOf<InferArgType<typeof argDefault>>().toEqualTypeOf<URL | URL[]>();
 	});
 
-	test('default shape', () => {
-		// @ts-expect-error singular default on a multiple flag
-		flag.url(d).multiple().default(url);
-		// @ts-expect-error empty default on a multiple flag
-		flag.url(d).multiple().default([]);
+	test('default values', () => {
+		const many = flag.url(d).multiple().default(url, url);
+		expectTypeOf<InferFlagType<typeof many>>().toEqualTypeOf<URL[]>();
+		// One argument per value, so an array is one value of an array type.
+		const pairs = flag.entry(d).multiple().default(['a', '1'], ['b', '2']);
+		expectTypeOf<InferFlagType<typeof pairs>>().toEqualTypeOf<[key: string, value: string][]>();
+		expect(() =>
+			// @ts-expect-error no values
+			flag.url(d).multiple().default(),
+		).toThrow('.default() needs at least one value');
+		// @ts-expect-error an array of values is not a value
+		flag.url(d).multiple().default([url]);
+		// @ts-expect-error a single flag has one default
+		flag.url(d).default(url, url);
 		// @ts-expect-error wrong value type
 		flag.number(d).default('1');
 	});

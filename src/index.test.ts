@@ -28,7 +28,7 @@ import type {
 	TreeErrors,
 	CommandConfig,
 	CommandTree,
-	DefaultValue,
+	DefaultValues,
 	ErrorData,
 	ErrorTemplateOptions,
 	Defined,
@@ -284,7 +284,13 @@ describe('type exports', () => {
 		expectTypeOf<Switch<boolean>>().toExtend<Param<boolean, boolean>>();
 		expectTypeOf<IsMultiple<string[] | undefined, string>>().toEqualTypeOf<true>();
 		expectTypeOf<IsMultiple<string[], string[]>>().toEqualTypeOf<false>();
-		expectTypeOf<DefaultValue<string[], string>>().toEqualTypeOf<readonly [string, ...string[]]>();
+		expectTypeOf<DefaultValues<string[], string>>().toEqualTypeOf<
+			[value: string, ...values: string[]]
+		>();
+		expectTypeOf<DefaultValues<string | undefined, string>>().toEqualTypeOf<[value: string]>();
+		expectTypeOf<DefaultValues<string | string[], string>>().toEqualTypeOf<
+			[value: string, ...values: string[]]
+		>();
 		expectTypeOf<undefined>().not.toExtend<Defined>();
 		expectTypeOf<ParamInit<number>>().toHaveProperty('value');
 		expectTypeOf<ValueType<number>['parse']>().returns.toEqualTypeOf<number | Promise<number>>();

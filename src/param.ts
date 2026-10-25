@@ -37,8 +37,16 @@ export interface MultipleOptions {
  */
 export type IsMultiple<T, V> = [Exclude<T, undefined>] extends [V[]] ? true : false;
 
-/** Defaults for `multiple` params must be non-empty, so `.multiple(false)` can take the first. */
-export type DefaultValue<T, V> = IsMultiple<T, V> extends true ? readonly [V, ...V[]] : V;
+/**
+ * What `.default(...values)` takes: one value for a single param, one or more for a
+ * `multiple` param, or for one that may be multiple (after `.multiple(on)` with a `boolean`
+ * variable), where a single param uses the first.
+ */
+export type DefaultValues<T, V> = [Exclude<T, undefined>] extends [V[]]
+	? [value: V, ...values: V[]]
+	: [Exclude<T, undefined>] extends [V]
+		? [value: V]
+		: [value: V, ...values: V[]];
 
 /** A parsed value: anything but `undefined`, which means "not provided". */
 export type Defined = {} | null;
@@ -66,7 +74,8 @@ export interface ParamInit<V> {
 	value: ValueType<V>;
 	options: ParamOptions;
 	state: ParamState;
-	defaultValue?: unknown;
+	/** The default values, in order. Empty, or left out, when there's no default. */
+	defaults?: readonly unknown[];
 }
 
 /**
@@ -82,13 +91,26 @@ export abstract class Param<T = unknown, V = unknown> {
 	readonly value: ValueType<V>;
 	readonly options: ParamOptions;
 	readonly state: ParamState;
-	readonly defaultValue: unknown;
+	/**
+	 * The default values, in order, whether or not the param is `multiple`: `.multiple()`
+	 * only changes how they're returned. Empty when there's no default.
+	 */
+	readonly defaults: readonly unknown[];
 
-	constructor({ defaultValue, options, state, value }: ParamInit<V>) {
+	constructor({ defaults = [], options, state, value }: ParamInit<V>) {
 		this.value = value;
 		this.options = options;
 		this.state = state;
-		this.defaultValue = defaultValue;
+		this.defaults = Object.freeze([...defaults]);
+	}
+
+	/**
+	 * The default as `run` receives it: all the values for a `multiple` param, otherwise the
+	 * first. `undefined` when there's no default.
+	 */
+	get defaultValue(): unknown {
+		if (!this.state.hasDefault) return undefined;
+		return this.state.multiple ? this.defaults.map(copy) : copy(this.defaults[0]);
 	}
 
 	/** Parses raw input strings into the param's final value, applying modifiers. */
@@ -104,11 +126,13 @@ export abstract class Param<T = unknown, V = unknown> {
 							.filter((value) => value !== ''),
 					);
 
+		if (inputs.length === 0 && given.length > 0) {
+			const reason = `must list at least one value, separated by '${separator}'`;
+			return { ok: false, errors: [new InvalidValueError(label, given[0]!, reason)] };
+		}
+
 		if (inputs.length === 0) {
-			if (hasDefault) {
-				const value = this.defaultValue;
-				return { ok: true, value: Array.isArray(value) ? [...value] : value };
-			}
+			if (hasDefault) return { ok: true, value: this.defaultValue };
 			if (required) return { ok: false, errors: [new MissingRequiredError(label)] };
 			return { ok: true, value: undefined };
 		}
@@ -135,37 +159,56 @@ export abstract class Param<T = unknown, V = unknown> {
 
 	/** Must be provided. Clears any default. */
 	protected setRequired(required: boolean): this {
-		return this.with({ ...this.state, required, hasDefault: false }, undefined);
+		return this.with({ ...this.state, required, hasDefault: false }, []);
 	}
 
-	/** Collects values into an array, converting an existing default between `v` and `[v]`. */
+	/** Collects values into an array. Defaults need no converting: they're always a list. */
 	protected setMultiple(allow: boolean | MultipleOptions): this {
+		// Types rule these out, but values from JavaScript aren't checked.
+		const isOptions = typeof allow === 'object' && allow !== null && !Array.isArray(allow);
+		if (typeof allow !== 'boolean' && !isOptions) {
+			throw new ConfigError('.multiple() takes a boolean or { separator }');
+		}
 		const multiple = allow !== false;
 		const separator = typeof allow === 'object' ? allow.separator : undefined;
-		if (separator === '') throw new ConfigError('A separator must not be empty');
-		let defaultValue = this.defaultValue;
-		if (this.state.hasDefault && multiple !== this.state.multiple) {
-			defaultValue = multiple ? [defaultValue] : (defaultValue as unknown[])[0];
+		if (separator !== undefined && (typeof separator !== 'string' || separator === '')) {
+			throw new ConfigError('A separator must be a non-empty string');
 		}
 		const { separator: _, ...state } = this.state;
 		return this.with(
 			{ ...state, multiple, ...(separator === undefined ? {} : { separator }) },
-			defaultValue,
+			this.defaults,
 		);
 	}
 
-	/** Uses `value` when absent. Clears `required`. */
-	protected setDefault(value: unknown): this {
-		return this.with({ ...this.state, required: false, hasDefault: true }, value);
+	/** Uses `values` when absent: all of them for a `multiple` param, else the first. */
+	protected setDefault(values: readonly unknown[]): this {
+		// Types require one; values from JavaScript aren't checked.
+		if (values.length === 0) throw new ConfigError('.default() needs at least one value');
+		return this.with({ ...this.state, required: false, hasDefault: true }, values);
 	}
 
-	/** A copy (same class) with new state. Array defaults are frozen copies. */
-	private with(state: ParamState, defaultValue: unknown): this {
-		const frozen = Array.isArray(defaultValue) ? Object.freeze([...defaultValue]) : defaultValue;
+	/** A copy (same class) with new state and a frozen copy of `defaults`. */
+	private with(state: ParamState, defaults: readonly unknown[]): this {
 		const copy = Object.create(Object.getPrototypeOf(this)) as this;
-		return Object.assign(copy, this, { state, defaultValue: frozen });
+		return Object.assign(copy, this, { state, defaults: Object.freeze([...defaults]) });
 	}
 }
+
+/**
+ * A copy of a default, so a `run` that changes the value it receives can't change the
+ * default for later runs: arrays and plain objects (e.g. JSON) are copied all the way down,
+ * and `Date` and `URL` values are copied. Instances of other classes are shared.
+ */
+const copy = (value: unknown): unknown => {
+	if (Array.isArray(value)) return value.map(copy);
+	if (value instanceof Date) return new Date(value);
+	if (value instanceof URL) return new URL(value);
+	if (typeof value !== 'object' || value === null) return value;
+	const prototype: unknown = Object.getPrototypeOf(value);
+	if (prototype !== Object.prototype && prototype !== null) return value;
+	return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, copy(item)]));
+};
 
 /** Narrows an unknown value to a param, e.g. when validating user-supplied definitions. */
 export const toParam = (param: unknown): Param => {

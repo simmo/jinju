@@ -95,7 +95,7 @@ describe('flags', () => {
 				dryRun: flag.boolean({ alias: 'n', description: 'Dry run' }),
 				color: flag.boolean({ alias: 'c', description: 'Colour' }).default(true),
 				level: flag.count({ description: 'Level' }),
-				tag: flag.string({ alias: 't', description: 'Tags' }).multiple().default(['a', 'b']),
+				tag: flag.string({ alias: 't', description: 'Tags' }).multiple().default('a', 'b'),
 				out: flag.directory({ alias: 'output', description: 'Out' }).required(),
 				mode: flag.string({ description: 'Mode', choices: ['fast', 'slow'] }),
 				site: flag.url({ description: 'Site' }).default(new URL('https://a.b/')),
@@ -376,6 +376,22 @@ describe('HelpTemplate', () => {
 		expect(data.flags.find((entry) => entry.name === 'tags')).toMatchObject({ separator: ',' });
 	});
 
+	test('defaults are shown by value type', () => {
+		const flags = {
+			config: flag.json({ description: 'Config' }).default({ a: 1 }),
+			define: flag.entry({ description: 'Define' }).default(['mode', 'fast']),
+			defines: flag.entry({ description: 'Defines' }).multiple().default(['a', '1'], ['b', '2']),
+			since: flag.date({ description: 'Since' }).default(new Date('2026-10-25')),
+			tags: flag.string({ description: 'Tags' }).multiple().default('x', 'y'),
+		};
+		const page = help({ command: command({ description: 'x', flags, run: () => {} }) });
+		expect(page).toContain('Config (default: {"a":1})');
+		expect(page).toContain('Define (default: mode=fast)');
+		expect(page).toContain('Defines (multiple; default: a=1, b=2)');
+		expect(page).toContain('Since (default: 2026-10-25T00:00:00.000Z)');
+		expect(page).toContain('Tags (multiple; default: x, y)');
+	});
+
 	test('tags include env, after the default', () => {
 		const port = flag.number({ description: 'Port', env: 'PORT' }).default(80);
 		const debug = flag.boolean({ description: 'Debug', env: 'DEBUG' });
@@ -396,6 +412,17 @@ describe('HelpTemplate', () => {
 		).toEqual(['a       First', 'longer  Second']);
 		expect(template.formatSection('Title', ['one', 'two'])).toBe('Title:\n  one\n  two');
 		expect(template.formatValue([new URL('https://a.b/'), 2])).toBe('https://a.b/, 2');
+		expect(template.formatValue({ a: [1, null] })).toBe('{"a":[1,null]}');
+		expect(template.formatValue([1, 2], 'json')).toBe('[1,2]');
+		expect(template.formatValue(['mode', 'fast'], 'key=value')).toBe('mode=fast');
+		expect(template.formatValue(new Date('2026-10-25'))).toBe('2026-10-25T00:00:00.000Z');
+		expect(template.formatValue(new Date('nope'))).toBe('Invalid Date');
+		expect(template.formatValue(undefined, 'json')).toBe('undefined');
+		expect(template.formatValue({ toJSON: () => undefined })).toBe('[object Object]');
+		const circular: Record<string, unknown> = {};
+		circular.self = circular;
+		expect(template.formatValue(circular)).toBe('[object Object]');
+		expect(template.formatValue(1n, 'json')).toBe('1');
 		expect(template.formatPath([part('project', true), part('deploy')])).toBe('<project> deploy');
 		expect(template.options).toEqual({ sortFlags: true, showHidden: false });
 	});
