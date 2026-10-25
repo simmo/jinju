@@ -44,7 +44,7 @@ class Arg<T, V extends Defined, N extends string | undefined = undefined> extend
 }
 ```
 
-The modifiers work like [`Flag`](./flag#flag-class)'s, except that `.multiple()` takes no [separator](./types#multipleoptions): each word is one value. Passing options to it anyway, e.g. from JavaScript, throws a `ConfigError`. Args are optional by default, and at most one arg in a command can be `.multiple()`.
+The modifiers work like [`Flag`](./flag#flag-class)'s, except that `.multiple()` takes no [separator](./types#multipleoptions): each word is one value. Args are optional by default, and at most one arg in a command can be `.multiple()`.
 
 ## `ArgOptions`
 

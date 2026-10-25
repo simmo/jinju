@@ -118,7 +118,7 @@ abstract class Param<T = unknown, V = unknown> {
 
 The base class of [`Flag`](./flag#flag-class), [`Switch`](./flag#switch) and [`Arg`](./arg#arg-class). `T` is the resolved type, e.g. `string[] | undefined`, and `V` is what one input parses to. `resolve` parses raw inputs into the final value, applying the modifiers.
 
-`defaults` holds the values given to `.default()`, in order, whether or not the param is `multiple`; it's empty when there's no default. `defaultValue` is the default as `run` receives it: all of `defaults` for a `multiple` param, otherwise the first, or `undefined` when there's none. It's a fresh copy each time, so a `run` that changes its value can't change the default: arrays and plain objects are copied all the way down, with every own property (symbol keys, getters and non-enumerable ones too), and `Date` and `URL` values are copied. A value that refers to itself, or to one object twice, keeps that shape in the copy. Instances of other classes, e.g. from custom parsers, are shared.
+`defaults` holds the values given to `.default()`. `defaultValue` is the default as `run` receives it: all of them for a `multiple` param (in a new array), otherwise the first.
 
 ### `ParamKind`
 
@@ -162,7 +162,7 @@ interface MultipleOptions {
 }
 ```
 
-What a flag's `.multiple()` accepts instead of a boolean. Args don't take it, since each word is already one value. With a `separator`, each value is also split on it: `--tag a,b` is two values. Values are trimmed and empty ones dropped (a value with none left, such as `,`, is an invalid value), and values from environment variables are split too. A separator that isn't a non-empty string is a `ConfigError`, and so is passing `.multiple()` anything but a boolean or these options (possible from JavaScript).
+What a flag's `.multiple()` accepts instead of a boolean. With a `separator`, each value is also split on it, trimmed, with empty values dropped: `--tag a,b` is two values. Environment variables are split too. Args don't take it.
 
 ### `ParamInit`
 
@@ -205,7 +205,7 @@ A parsed value: anything but `undefined`, which means "not provided".
 type IsMultiple<T, V> = [Exclude<T, undefined>] extends [V[]] ? true : false;
 ```
 
-`true` when resolved type `T` collects `V` values into an array. `false` when it could be a single value, including after `.multiple(on)` with a `boolean` variable, which gives `V | V[]`.
+`true` when resolved type `T` collects `V` values into an array.
 
 ### `DefaultValues`
 
@@ -217,7 +217,7 @@ type DefaultValues<T, V> = [Exclude<T, undefined>] extends [V[]]
 		: [value: V, ...values: V[]];
 ```
 
-What `.default(...values)` takes: one value for a single param, and one or more for a `.multiple()` param, or for one that may be multiple (after `.multiple(on)` with a `boolean` variable), where a single param uses the first. Each argument is one value, even an array, such as an `entry` pair. The one exception is `json`: `JsonValue` already includes arrays, so after `.multiple(on)` its type looks single, and `.default()` takes one value.
+What `.default(...values)` takes: one value for a single param, one or more for a `.multiple()` one. Each argument is one value, even an array.
 
 ## Values
 

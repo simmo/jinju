@@ -21,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `.multiple(on)` with a non-literal `boolean` keeps its `V | V[]` type through `.required()` and `.default()`, which previously narrowed it to `V`
-- `run` gets a fresh copy of each default (arrays, plain objects, `Date` and `URL` values), so changing it no longer changes the default for later runs
 - Help shows object defaults as JSON and `Date` defaults in ISO 8601, instead of `[object Object]` and a local date string, and falls back to `String(value)` for values JSON can't represent. `HelpTemplate.formatValue` takes the value type's name as an optional second argument
 - Docs favicons include PNG, ICO and Apple touch icon versions alongside the SVG, so they show in Safari too
 

@@ -60,11 +60,11 @@ class Flag<T, V extends Defined> extends Param<T, V> {
 }
 ```
 
-| Method                | Effect                                                                                                                                                                                         |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.required(on?)`      | Must be provided. Clears any default.                                                                                                                                                          |
-| `.multiple(on?)`      | Repeatable, collected into an array. Pass [`MultipleOptions`](./types#multipleoptions) to also split each value on a separator.                                                                |
-| `.default(...values)` | Used when absent: one value, or one or more when `multiple`, each its own argument. Clears `required`. Modifiers work in any order: all the values are kept, and a single flag uses the first. |
+| Method                | Effect                                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `.required(on?)`      | Must be provided. Clears any default.                                                                                           |
+| `.multiple(on?)`      | Repeatable, collected into an array. Pass [`MultipleOptions`](./types#multipleoptions) to also split each value on a separator. |
+| `.default(...values)` | Used when absent: one value, or one or more when `multiple`. Clears `required`.                                                 |
 
 Each returns a new flag: flags are immutable.
 

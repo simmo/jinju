@@ -111,11 +111,8 @@ export abstract class Param<T = unknown, V = unknown> {
 	 */
 	get defaultValue(): unknown {
 		if (!this.state.hasDefault) return undefined;
-		// One map for all the values, so a reference shared between them stays shared.
-		const seen = new Map<object, unknown>();
-		return this.state.multiple
-			? this.defaults.map((value) => copy(value, seen))
-			: copy(this.defaults[0], seen);
+		// A new list each time, so a `run` that changes it can't change the default.
+		return this.state.multiple ? [...this.defaults] : this.defaults[0];
 	}
 
 	/** Parses raw input strings into the param's final value, applying modifiers. */
@@ -171,16 +168,10 @@ export abstract class Param<T = unknown, V = unknown> {
 
 	/** Collects values into an array. Defaults need no converting: they're always a list. */
 	protected setMultiple(allow: boolean | MultipleOptions): this {
-		// Types rule these out, but values from JavaScript aren't checked.
-		const isOptions = typeof allow === 'object' && allow !== null && !Array.isArray(allow);
-		if (typeof allow !== 'boolean' && !isOptions) {
-			throw new ConfigError('.multiple() takes a boolean or { separator }');
-		}
 		const multiple = allow !== false;
 		const separator = typeof allow === 'object' ? allow.separator : undefined;
-		if (separator !== undefined && (typeof separator !== 'string' || separator === '')) {
-			throw new ConfigError('A separator must be a non-empty string');
-		}
+		// `''` type-checks, but would split every character apart.
+		if (separator === '') throw new ConfigError('A separator must not be empty');
 		const { separator: _, ...state } = this.state;
 		return this.with(
 			{ ...state, multiple, ...(separator === undefined ? {} : { separator }) },
@@ -190,8 +181,6 @@ export abstract class Param<T = unknown, V = unknown> {
 
 	/** Uses `values` when absent: all of them for a `multiple` param, else the first. */
 	protected setDefault(values: readonly unknown[]): this {
-		// Types require one; values from JavaScript aren't checked.
-		if (values.length === 0) throw new ConfigError('.default() needs at least one value');
 		return this.with({ ...this.state, required: false, hasDefault: true }, values);
 	}
 
@@ -201,36 +190,6 @@ export abstract class Param<T = unknown, V = unknown> {
 		return Object.assign(next, this, { state, defaults: Object.freeze([...defaults]) });
 	}
 }
-
-/**
- * A copy of a default, so a `run` that changes the value it receives can't change the
- * default for later runs: arrays and plain objects (e.g. JSON) are copied all the way down,
- * with every own property (symbol keys, getters and non-enumerable ones too), and `Date` and
- * `URL` values are copied. Instances of other classes are shared. `seen` maps each object to
- * its copy, so a value that refers to itself, or to one object twice, keeps that shape.
- */
-const copy = (value: unknown, seen = new Map<object, unknown>()): unknown => {
-	if (typeof value !== 'object' || value === null) return value;
-	if (seen.has(value)) return seen.get(value);
-	if (value instanceof Date || value instanceof URL) {
-		const result = value instanceof Date ? new Date(value) : new URL(value);
-		seen.set(value, result);
-		return result;
-	}
-	const prototype: unknown = Object.getPrototypeOf(value);
-	const plain = prototype === Object.prototype || prototype === null;
-	if (!Array.isArray(value) && !plain) return value;
-
-	// Registered before its contents are copied, so a cycle or a second reference finds it.
-	const result: object = Array.isArray(value) ? [] : Object.create(prototype as object | null);
-	seen.set(value, result);
-	for (const key of Reflect.ownKeys(value)) {
-		const descriptor = Object.getOwnPropertyDescriptor(value, key)!;
-		if ('value' in descriptor) descriptor.value = copy(descriptor.value, seen);
-		Object.defineProperty(result, key, descriptor);
-	}
-	return result;
-};
 
 /** Narrows an unknown value to a param, e.g. when validating user-supplied definitions. */
 export const toParam = (param: unknown): Param => {

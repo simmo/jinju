@@ -111,9 +111,7 @@ Flags are immutable: each modifier returns a new flag, so one definition can be 
 
 Switches only have `.default(value)`.
 
-Each argument to `.default()` is one value, so an array is one value of an array type: `flag.entry(o).multiple().default(['a', '1'], ['b', '2'])` is two entries. Modifiers work in any order. A flag keeps all its default values, and a single flag uses the first: `.default('a', 'b').multiple()` and `.multiple().default('a', 'b')` both give `['a', 'b']`.
-
-`.multiple(on)` with a `boolean` variable gives `V | V[]`, since the type can't know which, and `.required()` and `.default()` keep both.
+Each argument to `.default()` is one value, even an array: `flag.entry(o).multiple().default(['a', '1'], ['b', '2'])` is two entries. Modifiers can come in any order.
 
 The modifiers decide the type `run` receives:
 
@@ -144,7 +142,7 @@ command({
 
 A `.multiple()` flag is repeated on the command line (`-t a -t b`). Giving a flag that isn't `.multiple()` more than once is an error.
 
-With a separator, each value is also split: with `tag.multiple({ separator: ',' })`, `-t a,b -t c` gives `['a', 'b', 'c']`. Values are trimmed and empty ones dropped, and a value with nothing left, such as `-t ,`, is an error. The split happens before each value is parsed, so pick a separator that can't appear inside a value: `,` would break up `flag.json` or `flag.entry` values that contain commas. Help shows the flag as `(multiple, separated by ',')`. The separator also splits a value read from an [environment variable](./environment-variables), such as `TAGS=a,b`. The type is the same as with `.multiple()`.
+With a separator, each value is also split: `-t a,b -t c` gives `['a', 'b', 'c']`. Values are trimmed and empty ones dropped. Values from [environment variables](./environment-variables) are split too, such as `TAGS=a,b`.
 
 ## Custom parsers
 

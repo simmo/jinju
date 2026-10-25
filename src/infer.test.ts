@@ -90,10 +90,8 @@ describe('InferFlagType', () => {
 		const tags = flag.string(d).multiple({ separator: ',' });
 		expectTypeOf<InferFlagType<typeof tags>>().toEqualTypeOf<string[] | undefined>();
 
-		expect(() =>
-			// @ts-expect-error args take no separator
-			arg.string(d).multiple({ separator: ',' }),
-		).toThrow("Args don't take a separator");
+		// @ts-expect-error args take no separator
+		arg.string(d).multiple({ separator: ',' });
 	});
 
 	test('modifier toggles', () => {
@@ -147,10 +145,8 @@ describe('InferFlagType', () => {
 		// One argument per value, so an array is one value of an array type.
 		const pairs = flag.entry(d).multiple().default(['a', '1'], ['b', '2']);
 		expectTypeOf<InferFlagType<typeof pairs>>().toEqualTypeOf<[key: string, value: string][]>();
-		expect(() =>
-			// @ts-expect-error no values
-			flag.url(d).multiple().default(),
-		).toThrow('.default() needs at least one value');
+		// @ts-expect-error no values
+		flag.url(d).multiple().default();
 		// @ts-expect-error an array of values is not a value
 		flag.url(d).multiple().default([url]);
 		// @ts-expect-error a single flag has one default

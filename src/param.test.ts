@@ -35,24 +35,8 @@ describe('modifiers', () => {
 		expect(toParam(flag.string(d).multiple({})).state.separator).toBeUndefined();
 		expect(toParam(tags.multiple()).state).not.toHaveProperty('separator');
 		expect(toParam(tags.multiple(false)).state).not.toHaveProperty('separator');
-		for (const allow of [null, 'yes', 1, [',']]) {
-			expect(() => flag.string(d).multiple(allow as never)).toThrow(
-				'.multiple() takes a boolean or { separator }',
-			);
-		}
-		for (const separator of ['', null, 1]) {
-			expect(() => flag.string(d).multiple({ separator } as never)).toThrow(
-				'A separator must be a non-empty string',
-			);
-		}
-		expect(() => arg.string(d).multiple({ separator: ',' } as never)).toThrow(
-			"Args don't take a separator",
-		);
-		expect(() => arg.string(d).multiple([] as never)).toThrow(
-			'.multiple() takes a boolean or { separator }',
-		);
-		expect(() => arg.string(d).multiple(null as never)).toThrow(
-			'.multiple() takes a boolean or { separator }',
+		expect(() => flag.string(d).multiple({ separator: '' })).toThrow(
+			'A separator must not be empty',
 		);
 	});
 
@@ -72,10 +56,7 @@ describe('modifiers', () => {
 		expect(toParam(pairs.multiple(false)).defaultValue).toEqual(['a', '1']);
 	});
 
-	test('default needs a value, and required clears it', () => {
-		expect(() => flag.string(d).default(...([] as never as ['x']))).toThrow(
-			'.default() needs at least one value',
-		);
+	test('required clears a default', () => {
 		const cleared = toParam(flag.string(d).default('a').required());
 		expect(cleared.defaults).toEqual([]);
 		expect(cleared.defaultValue).toBeUndefined();
@@ -119,79 +100,7 @@ describe('resolve', () => {
 		);
 	});
 
-	test('defaults are copied all the way down, except class instances', async () => {
-		const config = flag.json(d).default({ nested: [1], when: null });
-		const resolved = await resolve(config, []);
-		if (resolved.ok) (resolved.value as { nested: number[] }).nested.push(2);
-		expect(await resolve(config, [])).toEqual({ ok: true, value: { nested: [1], when: null } });
-
-		const when = new Date('2026-10-25');
-		const date = toParam(flag.date(d).default(when)).defaultValue as Date;
-		expect(date).toEqual(when);
-		expect(date).not.toBe(when);
-		const url = new URL('https://a.b/');
-		const copied = toParam(flag.url(d).default(url)).defaultValue as URL;
-		expect(copied).toEqual(url);
-		expect(copied).not.toBe(url);
-		const bare = Object.create(null) as Record<string, number>;
-		bare.a = 1;
-		expect(toParam(flag.json(d).default(bare as never)).defaultValue).not.toBe(bare);
-
-		// Cycles and repeated references keep their shape; every own property is kept.
-		const tag = Symbol('tag');
-		const shared = { n: 1 };
-		const graph: Record<PropertyKey, unknown> = { shared, again: shared, [tag]: 'kept' };
-		graph.self = graph;
-		Object.defineProperty(graph, 'hidden', { value: [1], enumerable: false });
-		Object.defineProperty(graph, 'computed', { get: () => 42, enumerable: true });
-		const list: unknown[] = [1];
-		list.push(list);
-		const parseAny = flag.custom((input) => ({ input }) as object);
-		const graphCopy = toParam(parseAny(d).default(graph)).defaultValue as typeof graph;
-		expect(graphCopy).not.toBe(graph);
-		expect(graphCopy.self).toBe(graphCopy);
-		expect(graphCopy.again).toBe(graphCopy.shared);
-		expect(graphCopy.shared).not.toBe(shared);
-		expect(graphCopy[tag]).toBe('kept');
-		expect(Object.getOwnPropertyDescriptor(graphCopy, 'hidden')).toMatchObject({
-			value: [1],
-			enumerable: false,
-		});
-		expect(graphCopy.computed).toBe(42);
-		const epoch = new Date(0);
-		const dates = toParam(parseAny(d).default({ a: epoch, b: epoch })).defaultValue as {
-			a: Date;
-			b: Date;
-		};
-		expect(dates.a).toBe(dates.b);
-		expect(dates.a).not.toBe(epoch);
-		const many = toParam(parseAny(d).multiple().default(shared, { shared })).defaultValue as [
-			object,
-			{ shared: object },
-		];
-		expect(many[1].shared).toBe(many[0]);
-		expect(many[0]).not.toBe(shared);
-		const copiedList = toParam(parseAny(d).default(list)).defaultValue as unknown[];
-		expect(copiedList[1]).toBe(copiedList);
-		expect(copiedList).not.toBe(list);
-
-		class Point {
-			constructor(readonly x: number) {}
-		}
-		const point = new Point(1);
-		const parsePoint = flag.custom((input) => new Point(Number(input)));
-		expect(toParam(parsePoint(d).default(point)).defaultValue).toBe(point);
-	});
-
-	test('default arrays are copied', async () => {
-		const pairs = flag.entry(d).multiple().default(['k', 'v']);
-		const resolved = await resolve(pairs, []);
-		if (resolved.ok) (resolved.value as string[][])[0]!.push('mutated');
-		expect(await resolve(pairs, [])).toEqual({ ok: true, value: [['k', 'v']] });
-		const pair = flag.entry(d).default(['k', 'v']);
-		const value = await resolve(pair, []);
-		if (value.ok) (value.value as string[]).push('mutated');
-		expect(await resolve(pair, [])).toEqual({ ok: true, value: ['k', 'v'] });
+	test('a multiple default is a new list each time', async () => {
 		const param = flag.string(d).multiple().default('a');
 		const first = await resolve(param, []);
 		if (first.ok) (first.value as string[]).push('mutated');

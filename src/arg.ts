@@ -1,4 +1,3 @@
-import { ConfigError } from './errors';
 import { type Defined, type DefaultValues, Param } from './param';
 import {
 	type CheckSchemaInput,
@@ -54,11 +53,6 @@ export class Arg<T, V extends Defined, N extends string | undefined = undefined>
 	multiple<M extends boolean = true>(
 		allow: M = true as M,
 	): Arg<(M extends false ? V : V[]) | (undefined extends T ? undefined : never), V, N> {
-		// The type allows only booleans; this stops options passed from JavaScript.
-		// `setMultiple` rejects other non-booleans.
-		if (typeof allow === 'object' && allow !== null && !Array.isArray(allow)) {
-			throw new ConfigError("Args don't take a separator");
-		}
 		return this.setMultiple(allow) as never;
 	}
 
