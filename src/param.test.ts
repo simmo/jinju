@@ -104,7 +104,13 @@ describe('resolve', () => {
 			value: ['a', 'b', 'c', 'd', 'e'],
 		});
 		const empty = await resolve(tags.default('x'), [',', ' ']);
-		expect(empty.ok || empty.errors[0]!.message).toBe(
+		expect(empty.ok || empty.errors.map((error) => error.message)).toEqual([
+			"Invalid value ',' for --x: must list at least one value, separated by ','",
+			"Invalid value ' ' for --x: must list at least one value, separated by ','",
+		]);
+		// Another occurrence with values doesn't hide an empty one.
+		const mixed = await resolve(tags, [',', 'a']);
+		expect(mixed.ok || mixed.errors[0]!.message).toBe(
 			"Invalid value ',' for --x: must list at least one value, separated by ','",
 		);
 		const invalid = await resolve(flag.number(d).multiple({ separator: ',' }), ['1,x']);
@@ -130,6 +136,44 @@ describe('resolve', () => {
 		const bare = Object.create(null) as Record<string, number>;
 		bare.a = 1;
 		expect(toParam(flag.json(d).default(bare as never)).defaultValue).not.toBe(bare);
+
+		// Cycles and repeated references keep their shape; every own property is kept.
+		const tag = Symbol('tag');
+		const shared = { n: 1 };
+		const graph: Record<PropertyKey, unknown> = { shared, again: shared, [tag]: 'kept' };
+		graph.self = graph;
+		Object.defineProperty(graph, 'hidden', { value: [1], enumerable: false });
+		Object.defineProperty(graph, 'computed', { get: () => 42, enumerable: true });
+		const list: unknown[] = [1];
+		list.push(list);
+		const parseAny = flag.custom((input) => ({ input }) as object);
+		const graphCopy = toParam(parseAny(d).default(graph)).defaultValue as typeof graph;
+		expect(graphCopy).not.toBe(graph);
+		expect(graphCopy.self).toBe(graphCopy);
+		expect(graphCopy.again).toBe(graphCopy.shared);
+		expect(graphCopy.shared).not.toBe(shared);
+		expect(graphCopy[tag]).toBe('kept');
+		expect(Object.getOwnPropertyDescriptor(graphCopy, 'hidden')).toMatchObject({
+			value: [1],
+			enumerable: false,
+		});
+		expect(graphCopy.computed).toBe(42);
+		const epoch = new Date(0);
+		const dates = toParam(parseAny(d).default({ a: epoch, b: epoch })).defaultValue as {
+			a: Date;
+			b: Date;
+		};
+		expect(dates.a).toBe(dates.b);
+		expect(dates.a).not.toBe(epoch);
+		const many = toParam(parseAny(d).multiple().default(shared, { shared })).defaultValue as [
+			object,
+			{ shared: object },
+		];
+		expect(many[1].shared).toBe(many[0]);
+		expect(many[0]).not.toBe(shared);
+		const copiedList = toParam(parseAny(d).default(list)).defaultValue as unknown[];
+		expect(copiedList[1]).toBe(copiedList);
+		expect(copiedList).not.toBe(list);
 
 		class Point {
 			constructor(readonly x: number) {}

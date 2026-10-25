@@ -111,26 +111,32 @@ export abstract class Param<T = unknown, V = unknown> {
 	 */
 	get defaultValue(): unknown {
 		if (!this.state.hasDefault) return undefined;
-		return this.state.multiple ? this.defaults.map(copy) : copy(this.defaults[0]);
+		// One map for all the values, so a reference shared between them stays shared.
+		const seen = new Map<object, unknown>();
+		return this.state.multiple
+			? this.defaults.map((value) => copy(value, seen))
+			: copy(this.defaults[0], seen);
 	}
 
 	/** Parses raw input strings into the param's final value, applying modifiers. */
 	async resolve(given: readonly string[], label: string): Promise<Result<unknown>> {
 		const { hasDefault, multiple, required, separator } = this.state;
-		const inputs =
+		const groups = given.map((input) =>
 			separator === undefined
-				? given
-				: given.flatMap((input) =>
-						input
-							.split(separator)
-							.map((value) => value.trim())
-							.filter((value) => value !== ''),
-					);
-
-		if (inputs.length === 0 && given.length > 0) {
+				? [input]
+				: input
+						.split(separator)
+						.map((value) => value.trim())
+						.filter((value) => value !== ''),
+		);
+		// Each occurrence must list a value, even when another one does.
+		const empty = given.filter((_, index) => groups[index]!.length === 0);
+		if (empty.length > 0) {
 			const reason = `must list at least one value, separated by '${separator}'`;
-			return { ok: false, errors: [new InvalidValueError(label, given[0]!, reason)] };
+			const errors = empty.map((input) => new InvalidValueError(label, input, reason));
+			return { ok: false, errors };
 		}
+		const inputs = groups.flat();
 
 		if (inputs.length === 0) {
 			if (hasDefault) return { ok: true, value: this.defaultValue };
@@ -199,16 +205,31 @@ export abstract class Param<T = unknown, V = unknown> {
 /**
  * A copy of a default, so a `run` that changes the value it receives can't change the
  * default for later runs: arrays and plain objects (e.g. JSON) are copied all the way down,
- * and `Date` and `URL` values are copied. Instances of other classes are shared.
+ * with every own property (symbol keys, getters and non-enumerable ones too), and `Date` and
+ * `URL` values are copied. Instances of other classes are shared. `seen` maps each object to
+ * its copy, so a value that refers to itself, or to one object twice, keeps that shape.
  */
-const copy = (value: unknown): unknown => {
-	if (Array.isArray(value)) return value.map(copy);
-	if (value instanceof Date) return new Date(value);
-	if (value instanceof URL) return new URL(value);
+const copy = (value: unknown, seen = new Map<object, unknown>()): unknown => {
 	if (typeof value !== 'object' || value === null) return value;
+	if (seen.has(value)) return seen.get(value);
+	if (value instanceof Date || value instanceof URL) {
+		const result = value instanceof Date ? new Date(value) : new URL(value);
+		seen.set(value, result);
+		return result;
+	}
 	const prototype: unknown = Object.getPrototypeOf(value);
-	if (prototype !== Object.prototype && prototype !== null) return value;
-	return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, copy(item)]));
+	const plain = prototype === Object.prototype || prototype === null;
+	if (!Array.isArray(value) && !plain) return value;
+
+	// Registered before its contents are copied, so a cycle or a second reference finds it.
+	const result: object = Array.isArray(value) ? [] : Object.create(prototype as object | null);
+	seen.set(value, result);
+	for (const key of Reflect.ownKeys(value)) {
+		const descriptor = Object.getOwnPropertyDescriptor(value, key)!;
+		if ('value' in descriptor) descriptor.value = copy(descriptor.value, seen);
+		Object.defineProperty(result, key, descriptor);
+	}
+	return result;
 };
 
 /** Narrows an unknown value to a param, e.g. when validating user-supplied definitions. */

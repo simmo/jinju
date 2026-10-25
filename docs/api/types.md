@@ -118,7 +118,7 @@ abstract class Param<T = unknown, V = unknown> {
 
 The base class of [`Flag`](./flag#flag-class), [`Switch`](./flag#switch) and [`Arg`](./arg#arg-class). `T` is the resolved type, e.g. `string[] | undefined`, and `V` is what one input parses to. `resolve` parses raw inputs into the final value, applying the modifiers.
 
-`defaults` holds the values given to `.default()`, in order, whether or not the param is `multiple`; it's empty when there's no default. `defaultValue` is the default as `run` receives it: all of `defaults` for a `multiple` param, otherwise the first, or `undefined` when there's none. It's a fresh copy each time, so a `run` that changes its value can't change the default: arrays and plain objects are copied all the way down, and `Date` and `URL` values are copied. Instances of other classes, e.g. from custom parsers, are shared.
+`defaults` holds the values given to `.default()`, in order, whether or not the param is `multiple`; it's empty when there's no default. `defaultValue` is the default as `run` receives it: all of `defaults` for a `multiple` param, otherwise the first, or `undefined` when there's none. It's a fresh copy each time, so a `run` that changes its value can't change the default: arrays and plain objects are copied all the way down, with every own property (symbol keys, getters and non-enumerable ones too), and `Date` and `URL` values are copied. A value that refers to itself, or to one object twice, keeps that shape in the copy. Instances of other classes, e.g. from custom parsers, are shared.
 
 ### `ParamKind`
 
