@@ -32,19 +32,19 @@ interface ProgramConfig<T extends CommandTree = CommandTree> {
 }
 ```
 
-| Option        | Default                    | Description                                 |
-| ------------- | -------------------------- | ------------------------------------------- |
-| `name`        | The script's file name     | Shown in usage.                             |
-| `version`     |                            | Enables `--version`.                        |
-| `description` |                            | Shown on the root help page.                |
-| `commands`    |                            | The [command tree](#commandtree).           |
-| `strict`      | `true`                     | Reject unknown flags.                       |
-| `env`         | `process.env`              | Where flags' `env` variables are read from. |
-| `help`        | `new HelpTemplate()`       | Renders help pages.                         |
-| `error`       | `new ErrorTemplate()`      | Renders error output.                       |
-| `stdout`      | Writes to `process.stdout` | Receives help and version output.           |
-| `stderr`      | Writes to `process.stderr` | Receives error output.                      |
-| `exit`        | Sets `process.exitCode`    | Receives the exit code.                     |
+| Option        | Default                    | Description                                                                                                    |
+| ------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `name`        | The script's file name     | Shown in usage.                                                                                                |
+| `version`     |                            | Enables `--version`.                                                                                           |
+| `description` |                            | Shown on the root help page.                                                                                   |
+| `commands`    |                            | The [command tree](#commandtree).                                                                              |
+| `strict`      | `true`                     | Reject unknown flags. With `false`, they're passed to `run` in `unknown`. Scopes and commands can override it. |
+| `env`         | `process.env`              | Where flags' `env` variables are read from.                                                                    |
+| `help`        | `new HelpTemplate()`       | Renders help pages.                                                                                            |
+| `error`       | `new ErrorTemplate()`      | Renders error output.                                                                                          |
+| `stdout`      | Writes to `process.stdout` | Receives help and version output.                                                                              |
+| `stderr`      | Writes to `process.stderr` | Receives error output.                                                                                         |
+| `exit`        | Sets `process.exitCode`    | Receives the exit code.                                                                                        |
 
 ## `Program`
 

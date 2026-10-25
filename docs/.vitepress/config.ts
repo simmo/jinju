@@ -66,7 +66,12 @@ export default defineConfig({
 	cleanUrls: true,
 	lastUpdated: true,
 	head: [
+		// Safari before 26 ignores SVG favicons, so PNG, ICO and Apple touch icons back it up.
 		['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}favicon.svg` }],
+		['link', { rel: 'icon', type: 'image/png', sizes: '96x96', href: `${base}favicon-96x96.png` }],
+		['link', { rel: 'shortcut icon', href: `${base}favicon.ico` }],
+		['link', { rel: 'apple-touch-icon', sizes: '180x180', href: `${base}apple-touch-icon.png` }],
+		['link', { rel: 'manifest', href: `${base}site.webmanifest` }],
 		['meta', { name: 'theme-color', content: '#e84393' }],
 	],
 	vite: {

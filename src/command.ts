@@ -19,6 +19,11 @@ export interface RunContext<F extends FlagRecord, A extends ArgList> {
 	args: InferArgs<A>;
 	/** The argv this command parsed (command path removed). */
 	argv: readonly string[];
+	/**
+	 * Flags the command doesn't define, as given (e.g. `--foo=bar`), in order. Only filled
+	 * when the command isn't strict; otherwise they're errors and `run` isn't called.
+	 */
+	unknown: readonly string[];
 }
 
 /** Return a number to set the exit code. */
@@ -37,6 +42,8 @@ export interface CommandConfig<
 	aliases?: readonly string[];
 	/** Hide from help listings. */
 	hidden?: boolean;
+	/** Reject unknown flags. Overrides the scope's and the program's setting. */
+	strict?: boolean;
 	flags?: F;
 	/** Appended to any args inherited from the scope. */
 	args?: A & CheckArgs<[...Prefix, ...A]>;
@@ -47,6 +54,8 @@ export interface CommandConfig<
 export interface ScopeDefinition {
 	flags: FlagRecord;
 	args: ArgList;
+	/** Whether the scope's commands reject unknown flags, unless they set their own. */
+	strict?: boolean;
 }
 
 const EMPTY_SCOPE: ScopeDefinition = { flags: {}, args: [] };
@@ -147,7 +156,10 @@ export interface ParseOptions {
 	 * Their values aren't included in the result.
 	 */
 	globals?: FlagRecord;
-	/** Reject unknown flags. Defaults to `true`. */
+	/**
+	 * Reject unknown flags, for commands (and their scopes) that don't set `strict`. Defaults
+	 * to `true`.
+	 */
 	strict?: boolean;
 	/** Positional values captured before the command name (dynamic segments), placed first. */
 	leading?: readonly string[];
@@ -159,6 +171,8 @@ export interface Parsed {
 	flags: Record<string, unknown>;
 	args: unknown[];
 	argv: readonly string[];
+	/** Always set by `parse`. Optional so `Parsed` values built by hand still work; `execute` defaults it to `[]`. */
+	unknown?: readonly string[];
 }
 
 // oxlint-disable-next-line no-explicit-any
@@ -172,6 +186,8 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 	readonly args: A;
 	/** Keys of flags inherited from the scope (and not redefined by the command). */
 	readonly inherited: ReadonlySet<string>;
+	/** The command's own `strict`, or else its scope's. `undefined` when neither sets it. */
+	readonly strict: boolean | undefined;
 	readonly #params: Param[];
 
 	constructor(
@@ -182,6 +198,7 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 		this.flags = { ...scope.flags, ...own } as F;
 		this.inherited = new Set(Object.keys(scope.flags).filter((key) => !(key in own)));
 		this.args = [...scope.args, ...(config.args ?? [])] as unknown as A;
+		this.strict = config.strict ?? scope.strict;
 		this.#params = this.args.map(toParam);
 		indexFlags(this.flags);
 		checkMultiple(this.#params);
@@ -201,12 +218,14 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 
 	/** Parses argv (without the command path) into typed flags and args. */
 	async parse(argv: readonly string[], options: ParseOptions = {}): Promise<Result<Parsed>> {
-		const { globals = {}, strict = true } = options;
+		const { globals = {} } = options;
+		const strict = this.strict ?? options.strict ?? true;
 		const index = indexFlags({ ...globals, ...this.flags });
 		const errors: JinjuError[] = [];
 		const flagInputs = new Map<string, string[]>();
 		const occurrences = new Map<string, boolean[]>();
 		const positionals: string[] = [...(options.leading ?? [])];
+		const unknown: string[] = [];
 		const given = new Set<string>();
 
 		for (const token of tokenize(argv, index)) {
@@ -216,6 +235,7 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 			}
 			if (token.type === 'unknown') {
 				if (strict) errors.push(new UnknownFlagError(token.raw));
+				else unknown.push(token.raw);
 				continue;
 			}
 
@@ -267,12 +287,13 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 
 		await Promise.all([...flagResults, ...argResults]);
 		if (errors.length > 0) return { ok: false, errors };
-		return { ok: true, value: { args, argv, flags } };
+		return { ok: true, value: { args, argv, flags, unknown } };
 	}
 
 	/** Invokes the handler with parsed input. */
 	execute(parsed: Parsed): RunResult {
-		return (this.config.run as (context: Parsed) => RunResult)(parsed);
+		type Run = (context: Required<Parsed>) => RunResult;
+		return (this.config.run as Run)({ ...parsed, unknown: parsed.unknown ?? [] });
 	}
 }
 
@@ -292,6 +313,11 @@ export interface ScopeConfig<F extends FlagRecord, A extends ArgList, Prefix ext
 	flags?: F;
 	/** Args every command in the scope starts with. */
 	args?: A & CheckArgs<[...Prefix, ...A]>;
+	/**
+	 * Reject unknown flags. Overrides the program's setting and any outer scope's; commands
+	 * can override it.
+	 */
+	strict?: boolean;
 }
 
 /** Shared flags and args for a group of commands. Scopes nest. */
@@ -313,10 +339,12 @@ const createScope = (definition: ScopeDefinition): Scope => ({
 	args: definition.args as [],
 	command: ((config: CommandConfig<FlagRecord, ArgList, never>) =>
 		new Command(config, definition)) as Scope['command'],
-	scope: ((config: { flags?: FlagRecord; args?: ArgList }) => {
-		const next = {
+	scope: ((config: { flags?: FlagRecord; args?: ArgList; strict?: boolean }) => {
+		const strict = config.strict ?? definition.strict;
+		const next: ScopeDefinition = {
 			flags: { ...definition.flags, ...config.flags },
 			args: [...definition.args, ...(config.args ?? [])],
+			...(strict === undefined ? {} : { strict }),
 		};
 		indexFlags(next.flags);
 		checkMultiple(next.args.map(toParam));

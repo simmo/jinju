@@ -32,19 +32,19 @@ await app.run();
 
 `jinju({ name?, version?, description?, commands, strict?, help?, error?, env?, stdout?, stderr?, exit? })`
 
-| Option        | Default                 | Description                                                      |
-| ------------- | ----------------------- | ---------------------------------------------------------------- |
-| `commands`    |                         | The command tree. Required.                                      |
-| `name`        | The script's file name  | Shown in usage and error hints.                                  |
-| `version`     |                         | Printed by `--version`. Without it, there's no `--version` flag. |
-| `description` |                         | Shown at the top of the root help page.                          |
-| `strict`      | `true`                  | Reject unknown flags. With `false`, they're ignored.             |
-| `help`        | `new HelpTemplate()`    | Renders help pages. See [Help](./help).                          |
-| `error`       | `new ErrorTemplate()`   | Renders errors. See [Errors](./errors).                          |
-| `env`         | `process.env`           | Where flags' `env` variables are read from.                      |
-| `stdout`      | `process.stdout.write`  | Receives help and version text.                                  |
-| `stderr`      | `process.stderr.write`  | Receives error output.                                           |
-| `exit`        | Sets `process.exitCode` | Receives the exit code.                                          |
+| Option        | Default                 | Description                                                                                                    |
+| ------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `commands`    |                         | The command tree. Required.                                                                                    |
+| `name`        | The script's file name  | Shown in usage and error hints.                                                                                |
+| `version`     |                         | Printed by `--version`. Without it, there's no `--version` flag.                                               |
+| `description` |                         | Shown at the top of the root help page.                                                                        |
+| `strict`      | `true`                  | Reject unknown flags. With `false`, they're passed to `run` in `unknown`. Scopes and commands can override it. |
+| `help`        | `new HelpTemplate()`    | Renders help pages. See [Help](./help).                                                                        |
+| `error`       | `new ErrorTemplate()`   | Renders errors. See [Errors](./errors).                                                                        |
+| `env`         | `process.env`           | Where flags' `env` variables are read from.                                                                    |
+| `stdout`      | `process.stdout.write`  | Receives help and version text.                                                                                |
+| `stderr`      | `process.stderr.write`  | Receives error output.                                                                                         |
+| `exit`        | Sets `process.exitCode` | Receives the exit code.                                                                                        |
 
 See [Testing](./testing) for how `env`, `stdout`, `stderr` and `exit` help in tests.
 

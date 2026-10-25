@@ -26,7 +26,7 @@ export interface ProgramConfig<T extends CommandTree = CommandTree> {
 	version?: string;
 	description?: string;
 	commands: T & CheckTree<T>;
-	/** Reject unknown flags. Defaults to `true`. */
+	/** Reject unknown flags. Defaults to `true`. With `false`, they're passed to `run` in `unknown`. */
 	strict?: boolean;
 	/** Where flags' `env` variables are read from. Defaults to `process.env`. */
 	env?: Readonly<Record<string, string | undefined>>;

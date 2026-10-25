@@ -57,7 +57,10 @@
 	transform: none;
 }
 
-.twoslash .twoslash-query-line .twoslash-popup-arrow {
+/* The comment shows the type only: a doc comment (from JSDoc) belongs in the hover popup. */
+.twoslash .twoslash-query-line .twoslash-popup-arrow,
+.twoslash .twoslash-query-line .twoslash-popup-docs,
+.twoslash .twoslash-query-line .twoslash-popup-docs-tags {
 	display: none;
 }
 

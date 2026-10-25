@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Unknown flags in non-strict mode: with `strict: false`, `run` receives the flags a command doesn't define in `unknown`, as given (e.g. `--foo=bar`), so it can pass them on to another tool. `strict` can be set on the program, a scope or a command, and the nearest setting wins
+
+### Fixed
+
+- Docs favicons include PNG, ICO and Apple touch icon versions alongside the SVG, so they show in Safari too
+
 ## [0.1.1] - 2026-10-25
 
 ### Changed

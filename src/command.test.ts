@@ -74,6 +74,7 @@ describe('parse', () => {
 				args: ['a', 2],
 				argv: ['a', '--dry-run', '-t', 'x', '--tag=y', '-vv', '2'],
 				flags: { dryRun: true, tag: ['x', 'y'], verbose: 2 },
+				unknown: [],
 			},
 		});
 	});
@@ -120,9 +121,47 @@ describe('parse', () => {
 		expect(result.ok && result.value.argv).toEqual(['3']);
 	});
 
-	test('non-strict ignores unknown flags', async () => {
-		const result = await sync.parse(['a', '--what'], { strict: false });
-		expect(result.ok).toBe(true);
+	test('non-strict collects unknown flags as given', async () => {
+		const result = await sync.parse(['a', '--what', '-xv', '--to=b', '--dry-run'], {
+			strict: false,
+		});
+		expect(result.ok && result.value.unknown).toEqual(['--what', '-x', '--to=b']);
+		expect(result.ok && result.value.flags).toMatchObject({ dryRun: true, verbose: 1 });
+	});
+
+	test('execute accepts a Parsed built by hand, without unknown', async () => {
+		const seen: unknown[] = [];
+		const check = command({ description: 'x', run: ({ unknown }) => void seen.push(unknown) });
+		await check.execute({ flags: {}, args: [], argv: [] });
+		expect(seen).toEqual([[]]);
+	});
+
+	test('strict: the command, then its scopes, then the parse option, then true', async () => {
+		const unknown = async (target: { parse: typeof sync.parse }, strict?: boolean) => {
+			const result = await target.parse(['--what'], strict === undefined ? {} : { strict });
+			return result.ok ? result.value.unknown : result.errors.map((error) => error.message);
+		};
+		const rejected = ["Unknown flag '--what'"];
+		const loose = scope({ strict: false });
+		const plain = command({ description: 'x', run: noop });
+		expect(plain.strict).toBeUndefined();
+		expect(await unknown(plain)).toEqual(rejected);
+		expect(await unknown(plain, false)).toEqual(['--what']);
+
+		const own = command({ description: 'x', strict: false, run: noop });
+		expect(await unknown(own, true)).toEqual(['--what']);
+
+		const inherited = loose.command({ description: 'x', run: noop });
+		expect(inherited.strict).toBe(false);
+		expect(await unknown(inherited, true)).toEqual(['--what']);
+		expect(await unknown(loose.scope({}).command({ description: 'x', run: noop }))).toEqual([
+			'--what',
+		]);
+
+		const strictAgain = loose.scope({ strict: true }).command({ description: 'x', run: noop });
+		expect(await unknown(strictAgain, false)).toEqual(rejected);
+		const overridden = loose.command({ description: 'x', strict: true, run: noop });
+		expect(await unknown(overridden)).toEqual(rejected);
 	});
 
 	test('globals are parsed but only declared flags are returned', async () => {

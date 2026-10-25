@@ -30,7 +30,7 @@ const deploy = project.command({
 
 ## API
 
-- `scope({ flags?, args? })` creates a scope.
+- `scope({ flags?, args?, strict? })` creates a scope. `strict` sets whether its commands reject unknown flags, unless they set their own (see [Passing on unknown flags](./commands#passing-on-unknown-flags)).
 - `scope.command(config)` creates a command that inherits the scope's flags and args. It takes the same config as [`command()`](./commands#config).
 - `scope.scope(config)` creates a nested scope that adds more flags and args.
 

@@ -156,4 +156,4 @@ error: Invalid value '0.5' for --times: must be an integer
 Run 'app sync --help' for usage.
 ```
 
-Unknown flags are errors unless the program sets `strict: false`. See [Errors](./errors) to change how errors look.
+Unknown flags are errors unless the command, its scope or the program sets `strict: false`, which passes them to `run` instead (see [Passing on unknown flags](./commands#passing-on-unknown-flags)). See [Errors](./errors) to change how errors look.
