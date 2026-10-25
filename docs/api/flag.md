@@ -21,8 +21,8 @@ const flag: {
 	entry(options: FlagOptions): Flag<[key: string, value: string] | undefined, [key: string, value: string]>;
 	boolean(options: FlagOptions): Switch<boolean>;
 	count(options: FlagOptions): Switch<number>;
-	custom<V, O>(parse: Parse<V, O>, valueName?: string): (options: FlagOptions & O) => Flag<V | undefined, V>;
-	schema<S extends StandardSchemaV1>(schema: S, valueName?: string): (options: FlagOptions) => Flag<SchemaOutput<S> | undefined, SchemaOutput<S>>;
+	custom<V extends Defined, O extends object = {}>(parse: Parse<V, O>, valueName?: string): (options: FlagOptions & O) => Flag<V | undefined, V>;
+	schema<S extends StandardSchemaV1<unknown, Defined>>(schema: S & CheckSchemaInput<S>, valueName?: string): (options: FlagOptions) => Flag<SchemaOutput<S> | undefined, SchemaOutput<S>>;
 };
 ```
 
