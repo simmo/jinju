@@ -26,6 +26,14 @@ The docs site (VitePress, in `docs/`) is the reference for users. Every change t
 - Every page needs a `description` in its frontmatter: one sentence saying what the page covers. It's the page's meta description and its summary in `llms.txt`.
 - `npm run format` also formats code inside the docs. Run it before `docs:build`, since a reformatted line can move a `^?` marker.
 
+Before reporting a change as done, check the docs against the code, not from memory. Nothing checks the API reference's signatures or tables automatically:
+
+- **Signatures.** For every export you changed, read its declaration in `src/` and copy its signature into `docs/api/` from it: type parameters in order, with their constraints and defaults, then parameter and return types. A documented signature must be valid TypeScript that matches the real one, not a sketch.
+- **Tables.** Options and field tables (`FlagOptions`, `ProgramConfig`, `HelpData`, …) must list every property of the interface, with current defaults, and nothing that's gone.
+- **Every mention.** Search `docs/` for each name you changed or added (`grep -rn 'name' docs/guide docs/api`) and update each hit, guides included, not just the page you started from.
+- **Output.** Rerun any example whose output a page shows, and copy the new output.
+- **Compatibility.** Compare each changed export with the last release (`git show <tag>:src/<file>.ts`). Type parameters (their order and names) and option names are part of the public API: reordering or renaming them breaks callers. Avoid that, or list it under `Changed` as a breaking change.
+
 How the site is published:
 
 - Releases deploy it. `release.yml` calls `docs.yml`, which runs `scripts/build-docs.ts` and deploys to GitHub Pages. Run `docs.yml` by hand to redeploy without a release.
