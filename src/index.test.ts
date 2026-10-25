@@ -40,7 +40,9 @@ import type {
 	InferFlags,
 	InferFlagType,
 	IsMultiple,
+	JsonValue,
 	MergeFlags,
+	MultipleOptions,
 	NumberOptions,
 	Parse,
 	Parsed,
@@ -178,6 +180,10 @@ describe('type exports', () => {
 		expectTypeOf<FlagOptions>().toHaveProperty('alias');
 		expectTypeOf<ArgOptions>().toHaveProperty('name');
 		expectTypeOf<NumberOptions>().toHaveProperty('integer');
+		expectTypeOf<NumberOptions<1 | 2>['choices']>().toEqualTypeOf<readonly (1 | 2)[] | undefined>();
+		expectTypeOf<MultipleOptions>().toEqualTypeOf<{ separator?: string }>();
+		expectTypeOf<{ a: [1, 'b', null] }>().toExtend<JsonValue>();
+		expectTypeOf<undefined>().not.toExtend<JsonValue>();
 		expectTypeOf<PathOptions>().toHaveProperty('exists');
 		expectTypeOf<StringOptions<'a'>['choices']>().toEqualTypeOf<readonly 'a'[] | undefined>();
 		expectTypeOf<Parse<number>>().returns.toEqualTypeOf<number | Promise<number>>();

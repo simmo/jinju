@@ -72,7 +72,9 @@ export const parseDate: Parse<Date> = (input) => {
 	const date = new Date(input);
 	// `new Date()` rolls days over (`2026-02-30` → 2 March), so check the day exists.
 	const [year, month, day] = (match ?? []).slice(1).map(Number) as [number, number, number];
-	const calendar = new Date(Date.UTC(year, month - 1, day));
+	// Not `Date.UTC`, which reads years 0–99 as 1900–1999.
+	const calendar = new Date(0);
+	calendar.setUTCFullYear(year, month - 1, day);
 
 	if (!match || Number.isNaN(date.getTime()) || calendar.getUTCDate() !== day) {
 		throw new Error('must be an ISO 8601 date, e.g. 2026-10-25 or 2026-10-25T14:30');
