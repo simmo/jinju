@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-25
+
 ### Changed
 
 - Tooling: updated `fallow` to 3.35 and `tsdown` to 0.23.2
@@ -63,7 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New APIs; `celebrate`, `debug`, `fail`, `log`, `spinner`, `success`, `warn`
 - Ability to set a configuration
 
-[Unreleased]: https://github.com/simmo/jinju/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/simmo/jinju/compare/0.1.1...HEAD
 [@simmo]: https://github.com/simmo
 [0.0.1]: https://github.com/simmo/jinju/compare/0.0.1-beta.16...0.0.1
+[0.1.1]: https://github.com/simmo/jinju/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/simmo/jinju/compare/0.1.0-beta.1...0.1.0
