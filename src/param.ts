@@ -63,6 +63,7 @@ export interface ParamOptions {
 	name?: string;
 	choices?: readonly (string | number)[];
 	env?: string;
+	deprecated?: boolean | string;
 }
 
 /**

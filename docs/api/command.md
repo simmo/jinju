@@ -34,6 +34,7 @@ interface CommandConfig<F extends FlagRecord, A extends ArgList, Ctx, Prefix ext
 	description: string;
 	aliases?: readonly string[];
 	hidden?: boolean;
+	deprecated?: boolean | string;
 	strict?: boolean;
 	flags?: F;
 	args?: A & CheckArgs<[...Prefix, ...A]>;

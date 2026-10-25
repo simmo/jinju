@@ -66,15 +66,15 @@ class MyHelp extends HelpTemplate {
 jinju({ version: '1.0.0', help: new MyHelp({ sortFlags: false }), commands });
 ```
 
-| Method                                                       | Default                                                                                                              |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `render(data)`                                               | Joins `sections(data)` with blank lines and adds a trailing newline. Override it to replace the layout entirely      |
-| `sections(data)`                                             | `[description, usage, commands, args, flags]`, with empty sections left out                                          |
-| `formatUsage`, `formatCommands`, `formatArgs`, `formatFlags` | Each renders one section from `data`                                                                                 |
-| `commands(data)`, `flags(data)`                              | Choose what to list: hidden entries are left out unless `showHidden`, and flags are sorted unless `sortFlags: false` |
-| `formatCommand`, `formatArg`, `formatFlag`                   | One `[left, right]` table row each                                                                                   |
-| `formatTags`, `formatValue`, `formatPath`                    | ` (required; default: 3)`, default values, `<project> deploy`                                                        |
-| `formatTable(rows)`, `formatSection(title, lines)`           | Layout primitives                                                                                                    |
+| Method                                                                           | Default                                                                                                              |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `render(data)`                                                                   | Joins `sections(data)` with blank lines and adds a trailing newline. Override it to replace the layout entirely      |
+| `sections(data)`                                                                 | `[description, deprecated, usage, commands, args, flags]`, with empty sections left out                              |
+| `formatDeprecated`, `formatUsage`, `formatCommands`, `formatArgs`, `formatFlags` | Each renders one section from `data`                                                                                 |
+| `commands(data)`, `flags(data)`                                                  | Choose what to list: hidden entries are left out unless `showHidden`, and flags are sorted unless `sortFlags: false` |
+| `formatCommand`, `formatArg`, `formatFlag`                                       | One `[left, right]` table row each                                                                                   |
+| `formatTags`, `formatValue`, `formatPath`                                        | ` (required; default: 3)`, default values, `<project> deploy`                                                        |
+| `formatTable(rows)`, `formatSection(title, lines)`                               | Layout primitives                                                                                                    |
 
 The text `render` returns is printed as-is, so it should end with a newline.
 
@@ -82,15 +82,15 @@ The text `render` returns is printed as-is, so it should end with a newline.
 
 `HelpData` holds the building blocks of a page, and the template decides what to use and how. It makes no layout decisions: nothing is filtered or sorted.
 
-| Field                                | Contents                                                                                                                                                                                                  |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `program`                            | `name`, `version`, `description`                                                                                                                                                                          |
-| `path`                               | The command path as `{ name, dynamic }` parts. `formatPath(path)` gives `<project> deploy`                                                                                                                |
-| `description`, `aliases`, `runnable` | This level's description, its command's aliases, and whether it has a command to run                                                                                                                      |
-| `usage`                              | Usage lines, e.g. `app <project> deploy [flags] [<env>]`                                                                                                                                                  |
-| `commands`                           | Each subcommand: `name`, `label`, `description`, `aliases`, `hidden`, `dynamic`, full `path`, `runnable`, `group` (has subcommands)                                                                       |
-| `args`                               | Each arg in order: `name`, `label` (`<env>`), `usage` (`[<env>]`), `source` (`command` or `scope`), `segment`                                                                                             |
-| `flags`                              | Each flag in definition order, hidden ones included: `key`, `name`, `alias`, `kind` (`flag` or `switch`), `env`, `source` (`command`, `scope` or `builtin`), `hidden`, `label` (`-n, --dry-run <string>`) |
+| Field                                              | Contents                                                                                                                                                                                                                |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `program`                                          | `name`, `version`, `description`                                                                                                                                                                                        |
+| `path`                                             | The command path as `{ name, dynamic }` parts. `formatPath(path)` gives `<project> deploy`                                                                                                                              |
+| `description`, `aliases`, `runnable`, `deprecated` | This level's description, its command's aliases, whether it has a command to run, and whether that command is deprecated (`true` or the reason)                                                                         |
+| `usage`                                            | Usage lines, e.g. `app <project> deploy [flags] [<env>]`                                                                                                                                                                |
+| `commands`                                         | Each subcommand: `name`, `label`, `description`, `aliases`, `hidden`, `deprecated`, `dynamic`, full `path`, `runnable`, `group` (has subcommands)                                                                       |
+| `args`                                             | Each arg in order: `name`, `label` (`<env>`), `usage` (`[<env>]`), `source` (`command` or `scope`), `segment`                                                                                                           |
+| `flags`                                            | Each flag in definition order, hidden ones included: `key`, `name`, `alias`, `kind` (`flag` or `switch`), `env`, `source` (`command`, `scope` or `builtin`), `hidden`, `deprecated`, `label` (`-n, --dry-run <string>`) |
 
 Args and flags also carry `description`, `type`, `required`, `multiple`, `separator`, `hasDefault`, the raw `default`, `choices`, and `options`. `options` is everything passed to the creator, including `min`, `max`, `integer`, `exists` and the options of custom parsers.
 

@@ -7,6 +7,7 @@ import { ErrorTemplate } from './error-template';
 import { ConfigError, JinjuError, UnknownCommandError, UnknownFlagError } from './errors';
 import { flag, type FlagRecord } from './flag';
 import {
+	deprecation,
 	formatPath,
 	type HelpContext,
 	helpData,
@@ -17,7 +18,7 @@ import {
 	renderHelp,
 } from './help';
 import { type Param, toParam } from './param';
-import { type FlagLookup, type FlagSpec, isFlag, readFlag, tokenize } from './tokenize';
+import { type FlagLookup, type FlagSpec, isFlag, readFlag, type Token, tokenize } from './tokenize';
 import type { CheckTree, CommandTree } from './tree';
 
 export interface ProgramConfig<T extends CommandTree = CommandTree> {
@@ -244,6 +245,7 @@ export class Program {
 			...(this.#config.env === undefined ? {} : { env: this.#config.env }),
 		});
 		if (!result.ok) return this.#fail(result.errors, match);
+		this.#warn(this.#deprecations(node.command, tokens, match));
 
 		const cancel = this.#cancellation(options.signal);
 		try {
@@ -390,6 +392,7 @@ export class Program {
 				name,
 				aliases: command?.config.aliases ?? [],
 				hidden: command?.config.hidden ?? false,
+				...deprecation(command?.config.deprecated),
 				dynamic: false,
 			});
 		}
@@ -475,6 +478,33 @@ export class Program {
 		return renderHelp(this.#helpContext(node), this.#config.help);
 	}
 
+	/** Warnings for the deprecated command and flags this run uses. */
+	#deprecations(command: Command, tokens: readonly Token[], { words }: Match): string[] {
+		const warn = (name: string, value: boolean | string | undefined) => {
+			const { deprecated } = deprecation(value);
+			if (deprecated === undefined) return [];
+			return [`${name} is deprecated${deprecated === true ? '' : `: ${deprecated}`}`];
+		};
+		const used = new Set(tokens.flatMap((token) => (token.type === 'flag' ? [token.key] : [])));
+		return [
+			...warn(`'${[this.name, ...words].join(' ')}'`, command.config.deprecated),
+			...[...indexFlags(command.flags).entries].flatMap(([key, { label, param }]) =>
+				used.has(key) ? warn(label, param.options.deprecated) : [],
+			),
+		];
+	}
+
+	#warn(warnings: readonly string[]): void {
+		if (warnings.length === 0) return;
+		const template = this.#config.error ?? new ErrorTemplate();
+		const text = warnings.map((warning) => template.formatWarning(warning)).join('\n');
+		this.#stderr(`${text}\n`);
+	}
+
+	#stderr(text: string): void {
+		(this.#config.stderr ?? ((value) => process.stderr.write(value)))(text);
+	}
+
 	#print(text: string, code: number): number {
 		(this.#config.stdout ?? ((value) => process.stdout.write(value)))(text);
 		return code;
@@ -489,7 +519,7 @@ export class Program {
 			words,
 			help: helpData(this.#helpContext(node)),
 		});
-		(this.#config.stderr ?? ((value) => process.stderr.write(value)))(text);
+		this.#stderr(text);
 		return 1;
 	}
 }

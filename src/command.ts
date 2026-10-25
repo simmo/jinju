@@ -47,6 +47,11 @@ export interface CommandConfig<
 	aliases?: readonly string[];
 	/** Hide from help listings. */
 	hidden?: boolean;
+	/**
+	 * Still runs, but prints a warning first, and help marks it. A string is shown as the
+	 * reason, e.g. `"Use 'app deploy' instead"`.
+	 */
+	deprecated?: boolean | string;
 	/** Reject unknown flags. Overrides the scope's and the program's setting. */
 	strict?: boolean;
 	flags?: F;

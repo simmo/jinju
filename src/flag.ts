@@ -41,6 +41,11 @@ export interface FlagOptions {
 	 * like a command-line value. Empty values count as unset. Priority: argv, env, default.
 	 */
 	env?: string;
+	/**
+	 * Still accepted, but using it prints a warning, and help marks it. A string is shown as
+	 * the reason, e.g. `'Use --output instead'`.
+	 */
+	deprecated?: boolean | string;
 }
 
 /** A flag that takes a value: `--name value`, `--name=value`, `-n value`. */

@@ -91,6 +91,7 @@ interface FlagOptions {
 	alias?: string;
 	hidden?: boolean;
 	env?: string;
+	deprecated?: boolean | string;
 }
 ```
 
@@ -100,6 +101,7 @@ interface FlagOptions {
 | `alias`       | Another name, without dashes: `'v'` → `-v`, `'dir'` → `--dir`.                                                       |
 | `hidden`      | Leave out of help.                                                                                                   |
 | `env`         | Environment variable to read when the flag isn't given. See [Environment variables](../guide/environment-variables). |
+| `deprecated`  | Still accepted, but giving it prints a warning, and help marks it. A string gives the reason.                        |
 
 ## `FlagRecord`
 

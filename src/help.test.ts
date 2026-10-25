@@ -4,6 +4,7 @@ import { arg } from './arg';
 import { command, scope } from './command';
 import { flag } from './flag';
 import {
+	deprecation,
 	formatPath,
 	type HelpData,
 	type HelpEntry,
@@ -390,6 +391,39 @@ describe('HelpTemplate', () => {
 		expect(page).toContain('Defines (multiple; default: a=1, b=2)');
 		expect(page).toContain('Since (default: 2026-10-25T00:00:00.000Z)');
 		expect(page).toContain('Tags (multiple; default: x, y)');
+	});
+
+	test('marks deprecated commands and flags', () => {
+		const old = flag.string({ description: 'Old', deprecated: 'Use --new instead' });
+		const gone = flag.boolean({ description: 'Gone', deprecated: true });
+		const cmd = command({
+			description: 'Sync',
+			deprecated: "Use 'app copy' instead",
+			flags: { old, gone },
+			run: () => {},
+		});
+		const page = help({
+			command: cmd,
+			description: 'Sync',
+			subcommands: [entry('legacy', 'Legacy', { deprecated: true }), entry('current', 'Current')],
+		});
+		expect(page).toContain("Sync\n\nDeprecated: Use 'app copy' instead\n\nUsage:");
+		expect(page).toContain('legacy   Legacy (deprecated)\n');
+		expect(page).toContain('current  Current\n');
+		expect(page).toContain('--gone          Gone (deprecated)');
+		expect(page).toContain('--old <string>  Old (deprecated: Use --new instead)');
+
+		const data = helpData({ program, path: [], subcommands: [], command: cmd });
+		expect(data.deprecated).toBe("Use 'app copy' instead");
+		expect(data.flags.find((flag) => flag.key === 'gone')).toMatchObject({ deprecated: true });
+		expect(new HelpTemplate().formatDeprecated({ ...data, deprecated: true })).toBe('Deprecated.');
+	});
+
+	test('deprecation: an empty reason is true, false or unset is nothing', () => {
+		expect(deprecation('')).toEqual({ deprecated: true });
+		expect(deprecation('Why')).toEqual({ deprecated: 'Why' });
+		expect(deprecation(false)).toEqual({});
+		expect(deprecation(undefined)).toEqual({});
 	});
 
 	test('tags include env, after the default', () => {

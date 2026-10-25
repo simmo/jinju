@@ -91,12 +91,13 @@ A switch always has a value, so its type is never `undefined`. To default a bool
 
 Every flag creator takes these options:
 
-| Option        | Description                                                                                                      |
-| ------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `description` | Shown in help. Required.                                                                                         |
-| `alias`       | Another name, without dashes. One character gives `-x`, longer names give `--xyz`.                               |
-| `hidden`      | Leave the flag out of help. It's still accepted.                                                                 |
-| `env`         | An environment variable to read when the flag isn't given. See [Environment variables](./environment-variables). |
+| Option        | Description                                                                                                                              |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `description` | Shown in help. Required.                                                                                                                 |
+| `alias`       | Another name, without dashes. One character gives `-x`, longer names give `--xyz`.                                                       |
+| `hidden`      | Leave the flag out of help. It's still accepted.                                                                                         |
+| `deprecated`  | Still accepted, but giving it prints a warning, and help marks it. A string gives the reason. See [Deprecating](./commands#deprecating). |
+| `env`         | An environment variable to read when the flag isn't given. See [Environment variables](./environment-variables).                         |
 
 ## Modifiers
 

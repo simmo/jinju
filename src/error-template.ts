@@ -50,6 +50,14 @@ export class ErrorTemplate {
 		return `error: ${error.message}`;
 	}
 
+	/**
+	 * A warning printed before a command runs, e.g. for a deprecated flag. One line, without
+	 * a trailing newline.
+	 */
+	formatWarning(warning: string): string {
+		return `warning: ${warning}`;
+	}
+
 	formatHint(data: ErrorData): string {
 		return `Run '${this.formatCommand(data)} --help' for usage.`;
 	}
