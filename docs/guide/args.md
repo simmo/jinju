@@ -72,6 +72,8 @@ const copy = command({
 
 When there are too few values, required args are filled first, then optional args from left to right. Values left over when there's no `.multiple()` arg are "Unexpected argument" errors.
 
+Each word is one value, so args don't take a separator: `.multiple({ separator })` is only for [flags](./flags#modifiers).
+
 Declaring two `.multiple()` args is a type error, and throws a `ConfigError` at runtime:
 
 ```ts twoslash

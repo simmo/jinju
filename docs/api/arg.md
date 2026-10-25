@@ -35,12 +35,12 @@ class Arg<T, V extends Defined, N extends string | undefined = undefined> extend
 	readonly kind: 'arg';
 	readonly options: ArgOptions<N>;
 	required(required?: boolean): Arg<…>;
-	multiple(allow?: boolean | MultipleOptions): Arg<…>;
+	multiple(allow?: boolean): Arg<…>;
 	default(value: DefaultValue<T, V>): Arg<…>;
 }
 ```
 
-The modifiers work like [`Flag`](./flag#flag-class)'s. Args are optional by default, and at most one arg in a command can be `.multiple()`.
+The modifiers work like [`Flag`](./flag#flag-class)'s, except that `.multiple()` takes no [separator](./types#multipleoptions): each word is one value. Args are optional by default, and at most one arg in a command can be `.multiple()`.
 
 ## `ArgOptions`
 

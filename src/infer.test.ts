@@ -3,6 +3,7 @@ import { describe, expect, expectTypeOf, test } from 'vitest';
 import { arg } from './arg';
 import { flag } from './flag';
 import type { InferArgType, InferFlagType } from './infer';
+import type { MultipleOptions } from './param';
 import type { JsonValue } from './value';
 
 const d = { description: 'd' };
@@ -85,11 +86,12 @@ describe('InferFlagType', () => {
 		expectTypeOf<InferFlagType<typeof one>>().toEqualTypeOf<[key: string, value: string]>();
 	});
 
-	test('a separator keeps the multiple type', () => {
+	test('a separator keeps the multiple type, and only flags take one', () => {
 		const tags = flag.string(d).multiple({ separator: ',' });
 		expectTypeOf<InferFlagType<typeof tags>>().toEqualTypeOf<string[] | undefined>();
-		const required = arg.number(d).required().multiple({ separator: ',' });
-		expectTypeOf<InferArgType<typeof required>>().toEqualTypeOf<number[]>();
+
+		// @ts-expect-error args take no separator
+		arg.string(d).multiple({ separator: ',' });
 	});
 
 	test('modifier toggles', () => {
@@ -101,6 +103,19 @@ describe('InferFlagType', () => {
 		expectTypeOf<InferFlagType<typeof optional>>().toEqualTypeOf<URL | undefined>();
 		const lastWins = flag.url(d).default(url).required();
 		expectTypeOf<InferFlagType<typeof lastWins>>().toEqualTypeOf<URL>();
+	});
+
+	test('a non-literal boolean or options value gives a single value or an array', () => {
+		const on = Math.random() > 0.5;
+		const options: boolean | MultipleOptions = on ? { separator: ',' } : false;
+		const flags = flag.url(d).multiple(on);
+		expectTypeOf<InferFlagType<typeof flags>>().toEqualTypeOf<URL | URL[] | undefined>();
+		const split = flag.string(d).multiple(options);
+		expectTypeOf<InferFlagType<typeof split>>().toEqualTypeOf<string | string[] | undefined>();
+		const required = flag.url(d).required().multiple(on);
+		expectTypeOf<InferFlagType<typeof required>>().toEqualTypeOf<URL | URL[]>();
+		const args = arg.url(d).multiple(on);
+		expectTypeOf<InferArgType<typeof args>>().toEqualTypeOf<URL | URL[] | undefined>();
 	});
 
 	test('default shape', () => {

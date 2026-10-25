@@ -159,7 +159,7 @@ interface MultipleOptions {
 }
 ```
 
-What `.multiple()` accepts instead of a boolean. With a `separator`, each value is also split on it: `--tag a,b` is two values. Values are trimmed and empty ones dropped, and values from environment variables are split too. An empty separator is a `ConfigError`.
+What a flag's `.multiple()` accepts instead of a boolean. Args don't take it, since each word is already one value. With a `separator`, each value is also split on it: `--tag a,b` is two values. Values are trimmed and empty ones dropped, and values from environment variables are split too. An empty separator is a `ConfigError`.
 
 ### `ParamInit`
 

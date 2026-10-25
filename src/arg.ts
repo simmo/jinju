@@ -1,10 +1,4 @@
-import {
-	type Defined,
-	type DefaultValue,
-	type IsMultiple,
-	type MultipleOptions,
-	Param,
-} from './param';
+import { type Defined, type DefaultValue, type IsMultiple, Param } from './param';
 import {
 	type CheckSchemaInput,
 	type SchemaOutput,
@@ -53,10 +47,10 @@ export class Arg<T, V extends Defined, N extends string | undefined = undefined>
 	}
 
 	/**
-	 * Accept repeated values, collected into an array. Converts any default. Pass
-	 * `{ separator: ',' }` to also split each value: `--tag a,b`.
+	 * Accept several values, one per word, collected into an array. Converts any default.
+	 * Unlike flags, args take no separator: the words already separate the values.
 	 */
-	multiple<M extends boolean | MultipleOptions = true>(
+	multiple<M extends boolean = true>(
 		allow: M = true as M,
 	): Arg<(M extends false ? V : V[]) | (undefined extends T ? undefined : never), V, N> {
 		return this.setMultiple(allow) as never;
