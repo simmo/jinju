@@ -6,6 +6,15 @@ import { toParam } from './param';
 
 const d = { description: 'd' };
 
+describe('arg.number type parameters', () => {
+	test('the name comes first, as before choices existed', () => {
+		const count = arg.number<'count'>({ name: 'count', description: 'd' });
+		expectTypeOf(count).toEqualTypeOf<Arg<number | undefined, number, 'count'>>();
+		const level = arg.number<'level', 1 | 2>({ name: 'level', description: 'd', choices: [1, 2] });
+		expectTypeOf(level).toEqualTypeOf<Arg<1 | 2 | undefined, 1 | 2, 'level'>>();
+	});
+});
+
 describe('creators', () => {
 	test.each([
 		['string', arg.string(d)],

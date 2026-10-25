@@ -102,9 +102,10 @@ export const arg = {
 	json: custom(parseJson, 'json'),
 	/** `key=value`, as a `[key, value]` pair. With `.multiple()`, pass to `Object.fromEntries`. */
 	entry: custom(parseEntry, 'key=value'),
+	// `N` comes first, as it did before `choices`, so `arg.number<'count'>(…)` keeps working.
 	number: custom<number, NumberOptions>(parseNumber, 'number') as <
-		const C extends number = number,
 		const N extends string | undefined = undefined,
+		const C extends number = number,
 	>(
 		options: ArgOptions<N> & NumberOptions<C>,
 	) => Arg<NoInfer<C> | undefined, NoInfer<C>, NoInfer<N>>,

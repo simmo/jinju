@@ -11,7 +11,7 @@ Creators for positional args. See the [Args guide](../guide/args) for usage.
 ```ts
 const arg: {
 	string<C extends string = string, N extends string | undefined = undefined>(options: ArgOptions<N> & StringOptions<C>): Arg<C | undefined, C, N>;
-	number<C extends number = number, N extends string | undefined = undefined>(options: ArgOptions<N> & NumberOptions<C>): Arg<C | undefined, C, N>;
+	number<N extends string | undefined = undefined, C extends number = number>(options: ArgOptions<N> & NumberOptions<C>): Arg<C | undefined, C, N>;
 	url<N extends string | undefined = undefined>(options: ArgOptions<N>): Arg<URL | undefined, URL, N>;
 	email<N extends string | undefined = undefined>(options: ArgOptions<N>): Arg<string | undefined, string, N>;
 	directory<N extends string | undefined = undefined>(options: ArgOptions<N> & PathOptions): Arg<string | undefined, string, N>;
