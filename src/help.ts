@@ -338,7 +338,10 @@ export class HelpTemplate {
 	 */
 	formatValue(value: unknown, type?: string): string {
 		if (type === 'json') return toJson(value);
-		if (type === 'key=value' && Array.isArray(value)) return value.join('=');
+		// A pair, not a list of them (a `multiple` default), which the next line splits up.
+		if (type === 'key=value' && Array.isArray(value) && !value.some(Array.isArray)) {
+			return value.join('=');
+		}
 		if (Array.isArray(value)) return value.map((item) => this.formatValue(item, type)).join(', ');
 		if (value instanceof Date) {
 			return Number.isNaN(value.getTime()) ? 'Invalid Date' : value.toISOString();

@@ -40,7 +40,8 @@ export type IsMultiple<T, V> = [Exclude<T, undefined>] extends [V[]] ? true : fa
 /**
  * What `.default(...values)` takes: one value for a single param, one or more for a
  * `multiple` param, or for one that may be multiple (after `.multiple(on)` with a `boolean`
- * variable), where a single param uses the first.
+ * variable), where a single param uses the first. For `json`, may-be-multiple looks single
+ * (`JsonValue | JsonValue[]` is just `JsonValue`), so it takes one value.
  */
 export type DefaultValues<T, V> = [Exclude<T, undefined>] extends [V[]]
 	? [value: V, ...values: V[]]
@@ -190,8 +191,8 @@ export abstract class Param<T = unknown, V = unknown> {
 
 	/** A copy (same class) with new state and a frozen copy of `defaults`. */
 	private with(state: ParamState, defaults: readonly unknown[]): this {
-		const copy = Object.create(Object.getPrototypeOf(this)) as this;
-		return Object.assign(copy, this, { state, defaults: Object.freeze([...defaults]) });
+		const next = Object.create(Object.getPrototypeOf(this)) as this;
+		return Object.assign(next, this, { state, defaults: Object.freeze([...defaults]) });
 	}
 }
 

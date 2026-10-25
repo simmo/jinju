@@ -48,6 +48,9 @@ describe('modifiers', () => {
 		expect(() => arg.string(d).multiple({ separator: ',' } as never)).toThrow(
 			"Args don't take a separator",
 		);
+		expect(() => arg.string(d).multiple([] as never)).toThrow(
+			'.multiple() takes a boolean or { separator }',
+		);
 		expect(() => arg.string(d).multiple(null as never)).toThrow(
 			'.multiple() takes a boolean or { separator }',
 		);

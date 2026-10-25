@@ -217,7 +217,7 @@ type DefaultValues<T, V> = [Exclude<T, undefined>] extends [V[]]
 		: [value: V, ...values: V[]];
 ```
 
-What `.default(...values)` takes: one value for a single param, and one or more for a `.multiple()` param, or for one that may be multiple (after `.multiple(on)` with a `boolean` variable), where a single param uses the first. Each argument is one value, even an array, such as an `entry` pair.
+What `.default(...values)` takes: one value for a single param, and one or more for a `.multiple()` param, or for one that may be multiple (after `.multiple(on)` with a `boolean` variable), where a single param uses the first. Each argument is one value, even an array, such as an `entry` pair. The one exception is `json`: `JsonValue` already includes arrays, so after `.multiple(on)` its type looks single, and `.default()` takes one value.
 
 ## Values
 

@@ -129,6 +129,10 @@ describe('InferFlagType', () => {
 		expectTypeOf<InferFlagType<typeof thenDefault>>().toEqualTypeOf<URL | URL[]>();
 		const defaultFirst = flag.url(d).default(url).multiple(on);
 		expectTypeOf<InferFlagType<typeof defaultFirst>>().toEqualTypeOf<URL | URL[]>();
+		// `JsonValue | JsonValue[]` is just `JsonValue`, so this looks single: one default.
+		flag.json(d).multiple(on).default({ a: 1 });
+		// @ts-expect-error one value, since the type can't tell it may be multiple
+		flag.json(d).multiple(on).default({ a: 1 }, { b: 2 });
 		const json = flag.json(d).default([1, 2]);
 		expectTypeOf<InferFlagType<typeof json>>().toEqualTypeOf<JsonValue>();
 		const argRequired = arg.url(d).multiple(on).required();

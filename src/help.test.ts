@@ -415,6 +415,15 @@ describe('HelpTemplate', () => {
 		expect(template.formatValue({ a: [1, null] })).toBe('{"a":[1,null]}');
 		expect(template.formatValue([1, 2], 'json')).toBe('[1,2]');
 		expect(template.formatValue(['mode', 'fast'], 'key=value')).toBe('mode=fast');
+		expect(
+			template.formatValue(
+				[
+					['a', '1'],
+					['b', '2'],
+				],
+				'key=value',
+			),
+		).toBe('a=1, b=2');
 		expect(template.formatValue(new Date('2026-10-25'))).toBe('2026-10-25T00:00:00.000Z');
 		expect(template.formatValue(new Date('nope'))).toBe('Invalid Date');
 		expect(template.formatValue(undefined, 'json')).toBe('undefined');
