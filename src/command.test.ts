@@ -129,6 +129,13 @@ describe('parse', () => {
 		expect(result.ok && result.value.flags).toMatchObject({ dryRun: true, verbose: 1 });
 	});
 
+	test('execute accepts a Parsed built by hand, without unknown', async () => {
+		const seen: unknown[] = [];
+		const check = command({ description: 'x', run: ({ unknown }) => void seen.push(unknown) });
+		await check.execute({ flags: {}, args: [], argv: [] });
+		expect(seen).toEqual([[]]);
+	});
+
 	test('strict: the command, then its scopes, then the parse option, then true', async () => {
 		const unknown = async (target: { parse: typeof sync.parse }, strict?: boolean) => {
 			const result = await target.parse(['--what'], strict === undefined ? {} : { strict });

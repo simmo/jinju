@@ -117,11 +117,11 @@ interface Parsed {
 	flags: Record<string, unknown>;
 	args: unknown[];
 	argv: readonly string[];
-	unknown: readonly string[];
+	unknown?: readonly string[];
 }
 ```
 
-The untyped result of `Command.parse`, passed to `Command.execute`.
+The untyped result of `Command.parse`, passed to `Command.execute`. `parse` always sets `unknown`. It's optional so that a `Parsed` built by hand, as before `unknown` existed, still works: `execute` passes `[]` to `run` when it's missing.
 
 ## `Scope` {#scope-interface}
 

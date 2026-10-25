@@ -171,7 +171,8 @@ export interface Parsed {
 	flags: Record<string, unknown>;
 	args: unknown[];
 	argv: readonly string[];
-	unknown: readonly string[];
+	/** Always set by `parse`. Optional so `Parsed` values built by hand still work; `execute` defaults it to `[]`. */
+	unknown?: readonly string[];
 }
 
 // oxlint-disable-next-line no-explicit-any
@@ -291,7 +292,8 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 
 	/** Invokes the handler with parsed input. */
 	execute(parsed: Parsed): RunResult {
-		return (this.config.run as (context: Parsed) => RunResult)(parsed);
+		type Run = (context: Required<Parsed>) => RunResult;
+		return (this.config.run as Run)({ ...parsed, unknown: parsed.unknown ?? [] });
 	}
 }
 
