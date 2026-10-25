@@ -36,10 +36,12 @@ export interface HelpParam {
 	type: string;
 	required: boolean;
 	multiple: boolean;
+	/** What each value of a `multiple` param is split on, e.g. `','`. */
+	separator?: string;
 	hasDefault: boolean;
 	/** The raw default value (e.g. a `URL`); only meaningful when `hasDefault`. */
 	default: unknown;
-	choices?: readonly string[];
+	choices?: readonly (string | number)[];
 	/**
 	 * Everything passed to the creator, including type-specific options such as `min`,
 	 * `max`, `integer` or `exists`, and options of custom parsers.
@@ -127,11 +129,24 @@ const helpParam = (param: Param): HelpParam => ({
 	type: param.value.name,
 	required: param.state.required,
 	multiple: param.state.multiple,
+	...(param.state.separator === undefined ? {} : { separator: param.state.separator }),
 	hasDefault: param.state.hasDefault,
 	default: param.defaultValue,
 	...(param.options.choices ? { choices: param.options.choices } : {}),
 	options: { ...param.options },
 });
+
+/**
+ * JSON for help, or `String(value)` when there's none: `JSON.stringify` gives `undefined` for
+ * `undefined`, functions and symbols, and throws for a `BigInt` or a circular value.
+ */
+const toJson = (value: unknown): string => {
+	try {
+		return JSON.stringify(value) ?? String(value);
+	} catch {
+		return String(value);
+	}
+};
 
 /** `<project> deploy`: dynamic segments in angle brackets. */
 export const formatPath = (path: readonly HelpPathPart[]): string =>
@@ -301,18 +316,39 @@ export class HelpTemplate {
 	formatTags(param: HelpArg | HelpFlag): string {
 		const tags: string[] = [];
 		if (param.required) tags.push('required');
-		if (param.multiple) tags.push('multiple');
+		if (param.multiple) {
+			tags.push(param.separator ? `multiple, separated by '${param.separator}'` : 'multiple');
+		}
 		if (param.choices) tags.push(`choices: ${param.choices.join(', ')}`);
 		const isSwitch = 'kind' in param && param.kind === 'switch';
-		if (param.hasDefault && !isSwitch) tags.push(`default: ${this.formatValue(param.default)}`);
+		if (param.hasDefault && !isSwitch) {
+			const values =
+				param.multiple && Array.isArray(param.default) ? param.default : [param.default];
+			const shown = values.map((value) => this.formatValue(value, param.type)).join(', ');
+			tags.push(`default: ${shown}`);
+		}
 		if ('env' in param && param.env !== undefined) tags.push(`env: ${param.env}`);
 		return tags.length > 0 ? ` (${tags.join('; ')})` : '';
 	}
 
-	formatValue(value: unknown): string {
-		return Array.isArray(value)
-			? value.map((item) => this.formatValue(item)).join(', ')
-			: String(value);
+	/**
+	 * One value, e.g. a default, given the value type's name (`HelpParam.type`): `mode=fast`
+	 * for an entry, JSON for `json` and other objects, ISO 8601 for a `Date`. Arrays are
+	 * joined with `, `.
+	 */
+	formatValue(value: unknown, type?: string): string {
+		if (type === 'json') return toJson(value);
+		// A pair, not a list of them (a `multiple` default), which the next line splits up.
+		if (type === 'key=value' && Array.isArray(value) && !value.some(Array.isArray)) {
+			return value.join('=');
+		}
+		if (Array.isArray(value)) return value.map((item) => this.formatValue(item, type)).join(', ');
+		if (value instanceof Date) {
+			return Number.isNaN(value.getTime()) ? 'Invalid Date' : value.toISOString();
+		}
+		if (value instanceof URL) return value.href;
+		if (typeof value === 'object' && value !== null) return toJson(value);
+		return String(value);
 	}
 
 	formatPath(path: readonly HelpPathPart[]): string {

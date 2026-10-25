@@ -92,6 +92,6 @@ The text `render` returns is printed as-is, so it should end with a newline.
 | `args`                               | Each arg in order: `name`, `label` (`<env>`), `usage` (`[<env>]`), `source` (`command` or `scope`), `segment`                                                                                             |
 | `flags`                              | Each flag in definition order, hidden ones included: `key`, `name`, `alias`, `kind` (`flag` or `switch`), `env`, `source` (`command`, `scope` or `builtin`), `hidden`, `label` (`-n, --dry-run <string>`) |
 
-Args and flags also carry `description`, `type`, `required`, `multiple`, `hasDefault`, the raw `default`, `choices`, and `options`. `options` is everything passed to the creator, including `min`, `max`, `integer`, `exists` and the options of custom parsers.
+Args and flags also carry `description`, `type`, `required`, `multiple`, `separator`, `hasDefault`, the raw `default`, `choices`, and `options`. `options` is everything passed to the creator, including `min`, `max`, `integer`, `exists` and the options of custom parsers.
 
 See the [Help API](../api/help) for every type.

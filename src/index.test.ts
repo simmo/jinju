@@ -28,7 +28,7 @@ import type {
 	TreeErrors,
 	CommandConfig,
 	CommandTree,
-	DefaultValue,
+	DefaultValues,
 	ErrorData,
 	ErrorTemplateOptions,
 	Defined,
@@ -40,7 +40,9 @@ import type {
 	InferFlags,
 	InferFlagType,
 	IsMultiple,
+	JsonValue,
 	MergeFlags,
+	MultipleOptions,
 	NumberOptions,
 	Parse,
 	Parsed,
@@ -101,9 +103,12 @@ describe('runtime exports', () => {
 			'boolean',
 			'count',
 			'custom',
+			'date',
 			'directory',
 			'email',
+			'entry',
 			'file',
+			'json',
 			'number',
 			'schema',
 			'string',
@@ -111,9 +116,12 @@ describe('runtime exports', () => {
 		]);
 		expect(Object.keys(jinju.arg).sort()).toEqual([
 			'custom',
+			'date',
 			'directory',
 			'email',
+			'entry',
 			'file',
+			'json',
 			'number',
 			'schema',
 			'string',
@@ -172,6 +180,10 @@ describe('type exports', () => {
 		expectTypeOf<FlagOptions>().toHaveProperty('alias');
 		expectTypeOf<ArgOptions>().toHaveProperty('name');
 		expectTypeOf<NumberOptions>().toHaveProperty('integer');
+		expectTypeOf<NumberOptions<1 | 2>['choices']>().toEqualTypeOf<readonly (1 | 2)[] | undefined>();
+		expectTypeOf<MultipleOptions>().toEqualTypeOf<{ separator?: string }>();
+		expectTypeOf<{ a: [1, 'b', null] }>().toExtend<JsonValue>();
+		expectTypeOf<undefined>().not.toExtend<JsonValue>();
 		expectTypeOf<PathOptions>().toHaveProperty('exists');
 		expectTypeOf<StringOptions<'a'>['choices']>().toEqualTypeOf<readonly 'a'[] | undefined>();
 		expectTypeOf<Parse<number>>().returns.toEqualTypeOf<number | Promise<number>>();
@@ -272,7 +284,13 @@ describe('type exports', () => {
 		expectTypeOf<Switch<boolean>>().toExtend<Param<boolean, boolean>>();
 		expectTypeOf<IsMultiple<string[] | undefined, string>>().toEqualTypeOf<true>();
 		expectTypeOf<IsMultiple<string[], string[]>>().toEqualTypeOf<false>();
-		expectTypeOf<DefaultValue<string[], string>>().toEqualTypeOf<readonly [string, ...string[]]>();
+		expectTypeOf<DefaultValues<string[], string>>().toEqualTypeOf<
+			[value: string, ...values: string[]]
+		>();
+		expectTypeOf<DefaultValues<string | undefined, string>>().toEqualTypeOf<[value: string]>();
+		expectTypeOf<DefaultValues<string | string[], string>>().toEqualTypeOf<
+			[value: string, ...values: string[]]
+		>();
 		expectTypeOf<undefined>().not.toExtend<Defined>();
 		expectTypeOf<ParamInit<number>>().toHaveProperty('value');
 		expectTypeOf<ValueType<number>['parse']>().returns.toEqualTypeOf<number | Promise<number>>();

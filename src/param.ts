@@ -1,4 +1,5 @@
 import {
+	ConfigError,
 	DuplicateFlagError,
 	InvalidValueError,
 	type JinjuError,
@@ -17,6 +18,17 @@ export interface ParamState {
 	readonly required: boolean;
 	readonly multiple: boolean;
 	readonly hasDefault: boolean;
+	/** Splits each input into several values, e.g. `','` for `--tag a,b`. Only when `multiple`. */
+	readonly separator?: string;
+}
+
+/** Options for `.multiple()`. */
+export interface MultipleOptions {
+	/**
+	 * Also split each value on this string: with `','`, `--tag a,b` is two values. Values
+	 * are trimmed, and empty ones dropped. Applies to environment variables too.
+	 */
+	separator?: string;
 }
 
 /**
@@ -25,8 +37,17 @@ export interface ParamState {
  */
 export type IsMultiple<T, V> = [Exclude<T, undefined>] extends [V[]] ? true : false;
 
-/** Defaults for `multiple` params must be non-empty, so `.multiple(false)` can take the first. */
-export type DefaultValue<T, V> = IsMultiple<T, V> extends true ? readonly [V, ...V[]] : V;
+/**
+ * What `.default(...values)` takes: one value for a single param, one or more for a
+ * `multiple` param, or for one that may be multiple (after `.multiple(on)` with a `boolean`
+ * variable), where a single param uses the first. For `json`, may-be-multiple looks single
+ * (`JsonValue | JsonValue[]` is just `JsonValue`), so it takes one value.
+ */
+export type DefaultValues<T, V> = [Exclude<T, undefined>] extends [V[]]
+	? [value: V, ...values: V[]]
+	: [Exclude<T, undefined>] extends [V]
+		? [value: V]
+		: [value: V, ...values: V[]];
 
 /** A parsed value: anything but `undefined`, which means "not provided". */
 export type Defined = {} | null;
@@ -40,7 +61,7 @@ export interface ParamOptions {
 	alias?: string;
 	hidden?: boolean;
 	name?: string;
-	choices?: readonly string[];
+	choices?: readonly (string | number)[];
 	env?: string;
 }
 
@@ -54,7 +75,8 @@ export interface ParamInit<V> {
 	value: ValueType<V>;
 	options: ParamOptions;
 	state: ParamState;
-	defaultValue?: unknown;
+	/** The default values, in order. Empty, or left out, when there's no default. */
+	defaults?: readonly unknown[];
 }
 
 /**
@@ -70,24 +92,51 @@ export abstract class Param<T = unknown, V = unknown> {
 	readonly value: ValueType<V>;
 	readonly options: ParamOptions;
 	readonly state: ParamState;
-	readonly defaultValue: unknown;
+	/**
+	 * The default values, in order, whether or not the param is `multiple`: `.multiple()`
+	 * only changes how they're returned. Empty when there's no default.
+	 */
+	readonly defaults: readonly unknown[];
 
-	constructor({ defaultValue, options, state, value }: ParamInit<V>) {
+	constructor({ defaults = [], options, state, value }: ParamInit<V>) {
 		this.value = value;
 		this.options = options;
 		this.state = state;
-		this.defaultValue = defaultValue;
+		this.defaults = Object.freeze([...defaults]);
+	}
+
+	/**
+	 * The default as `run` receives it: all the values for a `multiple` param, otherwise the
+	 * first. `undefined` when there's no default.
+	 */
+	get defaultValue(): unknown {
+		if (!this.state.hasDefault) return undefined;
+		// A new list each time, so a `run` that changes it can't change the default.
+		return this.state.multiple ? [...this.defaults] : this.defaults[0];
 	}
 
 	/** Parses raw input strings into the param's final value, applying modifiers. */
-	async resolve(inputs: readonly string[], label: string): Promise<Result<unknown>> {
-		const { hasDefault, multiple, required } = this.state;
+	async resolve(given: readonly string[], label: string): Promise<Result<unknown>> {
+		const { hasDefault, multiple, required, separator } = this.state;
+		const groups = given.map((input) =>
+			separator === undefined
+				? [input]
+				: input
+						.split(separator)
+						.map((value) => value.trim())
+						.filter((value) => value !== ''),
+		);
+		// Each occurrence must list a value, even when another one does.
+		const empty = given.filter((_, index) => groups[index]!.length === 0);
+		if (empty.length > 0) {
+			const reason = `must list at least one value, separated by '${separator}'`;
+			const errors = empty.map((input) => new InvalidValueError(label, input, reason));
+			return { ok: false, errors };
+		}
+		const inputs = groups.flat();
 
 		if (inputs.length === 0) {
-			if (hasDefault) {
-				const value = this.defaultValue;
-				return { ok: true, value: Array.isArray(value) ? [...value] : value };
-			}
+			if (hasDefault) return { ok: true, value: this.defaultValue };
 			if (required) return { ok: false, errors: [new MissingRequiredError(label)] };
 			return { ok: true, value: undefined };
 		}
@@ -114,28 +163,31 @@ export abstract class Param<T = unknown, V = unknown> {
 
 	/** Must be provided. Clears any default. */
 	protected setRequired(required: boolean): this {
-		return this.with({ ...this.state, required, hasDefault: false }, undefined);
+		return this.with({ ...this.state, required, hasDefault: false }, []);
 	}
 
-	/** Collects values into an array, converting an existing default between `v` and `[v]`. */
-	protected setMultiple(allow: boolean): this {
-		let defaultValue = this.defaultValue;
-		if (this.state.hasDefault && allow !== this.state.multiple) {
-			defaultValue = allow ? [defaultValue] : (defaultValue as unknown[])[0];
-		}
-		return this.with({ ...this.state, multiple: allow }, defaultValue);
+	/** Collects values into an array. Defaults need no converting: they're always a list. */
+	protected setMultiple(allow: boolean | MultipleOptions): this {
+		const multiple = allow !== false;
+		const separator = typeof allow === 'object' ? allow.separator : undefined;
+		// `''` type-checks, but would split every character apart.
+		if (separator === '') throw new ConfigError('A separator must not be empty');
+		const { separator: _, ...state } = this.state;
+		return this.with(
+			{ ...state, multiple, ...(separator === undefined ? {} : { separator }) },
+			this.defaults,
+		);
 	}
 
-	/** Uses `value` when absent. Clears `required`. */
-	protected setDefault(value: unknown): this {
-		return this.with({ ...this.state, required: false, hasDefault: true }, value);
+	/** Uses `values` when absent: all of them for a `multiple` param, else the first. */
+	protected setDefault(values: readonly unknown[]): this {
+		return this.with({ ...this.state, required: false, hasDefault: true }, values);
 	}
 
-	/** A copy (same class) with new state. Array defaults are frozen copies. */
-	private with(state: ParamState, defaultValue: unknown): this {
-		const frozen = Array.isArray(defaultValue) ? Object.freeze([...defaultValue]) : defaultValue;
-		const copy = Object.create(Object.getPrototypeOf(this)) as this;
-		return Object.assign(copy, this, { state, defaultValue: frozen });
+	/** A copy (same class) with new state and a frozen copy of `defaults`. */
+	private with(state: ParamState, defaults: readonly unknown[]): this {
+		const next = Object.create(Object.getPrototypeOf(this)) as this;
+		return Object.assign(next, this, { state, defaults: Object.freeze([...defaults]) });
 	}
 }
 

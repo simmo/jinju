@@ -7,9 +7,12 @@ import { describe, expect, test } from 'vitest';
 import {
 	parseBoolean,
 	parseCount,
+	parseDate,
 	parseDirectory,
 	parseEmail,
 	parseFile,
+	parseJson,
+	parseEntry,
 	parseNumber,
 	parseString,
 	parseUrl,
@@ -53,6 +56,74 @@ test('url', () => {
 test('email', () => {
 	expect(parseEmail('me@example.com', {})).toBe('me@example.com');
 	expect(() => parseEmail('me@example', {})).toThrow('valid email');
+});
+
+describe('number choices', () => {
+	test('restricts to choices, after the other checks', () => {
+		expect(parseNumber('2', { choices: [1, 2, 4] })).toBe(2);
+		expect(parseNumber('2.0', { choices: [1, 2, 4] })).toBe(2);
+		expect(() => parseNumber('3', { choices: [1, 2, 4] })).toThrow('must be one of 1, 2, 4');
+		expect(() => parseNumber('x', { choices: [1] })).toThrow('must be a number');
+	});
+});
+
+describe('date', () => {
+	test.each([
+		['2026-10-25', '2026-10-25T00:00:00.000Z'],
+		['2024-02-29', '2024-02-29T00:00:00.000Z'],
+		['0000-02-29', '0000-02-29T00:00:00.000Z'],
+		['0096-02-29', '0096-02-29T00:00:00.000Z'],
+		['2026-10-25T14:30Z', '2026-10-25T14:30:00.000Z'],
+		['2026-10-25T14:30:15.5Z', '2026-10-25T14:30:15.500Z'],
+		['2026-10-25T14:30+01:00', '2026-10-25T13:30:00.000Z'],
+	])('parses %j', (input, iso) => {
+		expect(parseDate(input, {})).toEqual(new Date(iso));
+	});
+
+	test('reads a time without an offset as local time', () => {
+		expect(parseDate('2026-10-25T14:30', {})).toEqual(new Date(2026, 9, 25, 14, 30));
+	});
+
+	test.each([
+		'',
+		'today',
+		'25/10/2026',
+		'2026-10-25 14:30',
+		'2026-13-01',
+		'2026-02-30',
+		'2025-02-29',
+		'0099-02-29',
+		'2026-10-25T25:00',
+	])('rejects %j', (input) => {
+		expect(() => parseDate(input, {})).toThrow('must be an ISO 8601 date');
+	});
+});
+
+describe('json', () => {
+	test.each([
+		['{"a":[1,true,null]}', { a: [1, true, null] }],
+		['"text"', 'text'],
+		['3', 3],
+		['null', null],
+	])('parses %j', (input, value) => {
+		expect(parseJson(input, {})).toEqual(value);
+	});
+
+	test.each(['', '{a:1}', "'text'", 'text'])('rejects %j', (input) => {
+		expect(() => parseJson(input, {})).toThrow('must be valid JSON');
+	});
+});
+
+describe('entry', () => {
+	test('splits at the first =', () => {
+		expect(parseEntry('mode=fast', {})).toEqual(['mode', 'fast']);
+		expect(parseEntry('query=a=b', {})).toEqual(['query', 'a=b']);
+		expect(parseEntry('empty=', {})).toEqual(['empty', '']);
+	});
+
+	test.each(['', 'mode', '=fast'])('rejects %j', (input) => {
+		expect(() => parseEntry(input, {})).toThrow('must be key=value');
+	});
 });
 
 describe('boolean', () => {

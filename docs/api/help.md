@@ -29,7 +29,7 @@ class HelpTemplate {
 	formatFlag(flag: HelpFlag): HelpRow;
 
 	formatTags(param: HelpArg | HelpFlag): string;
-	formatValue(value: unknown): string;
+	formatValue(value: unknown, type?: string): string;
 	formatPath(path: readonly HelpPathPart[]): string;
 	formatTable(rows: readonly HelpRow[]): string[];
 	formatSection(title: string, lines: readonly string[]): string;
@@ -38,18 +38,18 @@ class HelpTemplate {
 
 Renders help pages from [`HelpData`](#helpdata). This is the built-in layout: extend it and override any method to change part of it, or `render` to replace it.
 
-| Method                                                       | Default                                                                                                   |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `render`                                                     | Joins `sections` with blank lines and adds a trailing newline. The result is printed as-is.               |
-| `sections`                                                   | `[description, usage, commands, args, flags]`, with empty sections left out                               |
-| `commands`, `flags`                                          | What to list: hidden entries are left out unless `showHidden`; flags are sorted unless `sortFlags: false` |
-| `formatUsage`, `formatCommands`, `formatArgs`, `formatFlags` | One section each, or `''` when there's nothing to show                                                    |
-| `formatCommand`, `formatArg`, `formatFlag`                   | One table row each: `[label, description + tags]`                                                         |
-| `formatTags`                                                 | e.g. ` (required; default: 3)`. Switch defaults aren't shown                                              |
-| `formatValue`                                                | A default value; arrays are joined with `, `                                                              |
-| `formatPath`                                                 | [`formatPath`](#formatpath)                                                                               |
-| `formatTable`                                                | Rows with the left column padded to a common width                                                        |
-| `formatSection`                                              | A `Title:` heading followed by indented lines                                                             |
+| Method                                                       | Default                                                                                                                          |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `render`                                                     | Joins `sections` with blank lines and adds a trailing newline. The result is printed as-is.                                      |
+| `sections`                                                   | `[description, usage, commands, args, flags]`, with empty sections left out                                                      |
+| `commands`, `flags`                                          | What to list: hidden entries are left out unless `showHidden`; flags are sorted unless `sortFlags: false`                        |
+| `formatUsage`, `formatCommands`, `formatArgs`, `formatFlags` | One section each, or `''` when there's nothing to show                                                                           |
+| `formatCommand`, `formatArg`, `formatFlag`                   | One table row each: `[label, description + tags]`                                                                                |
+| `formatTags`                                                 | e.g. ` (required; default: 3)`. Switch defaults aren't shown                                                                     |
+| `formatValue`                                                | One value, given its type's name (`HelpParam.type`): e.g. `mode=fast` for an entry, JSON for `json`. Arrays are joined with `, ` |
+| `formatPath`                                                 | [`formatPath`](#formatpath)                                                                                                      |
+| `formatTable`                                                | Rows with the left column padded to a common width                                                                               |
+| `formatSection`                                              | A `Title:` heading followed by indented lines                                                                                    |
 
 ## `HelpTemplateOptions`
 
@@ -140,14 +140,15 @@ interface HelpParam {
 	type: string;
 	required: boolean;
 	multiple: boolean;
+	separator?: string;
 	hasDefault: boolean;
 	default: unknown;
-	choices?: readonly string[];
+	choices?: readonly (string | number)[];
 	options: Readonly<Record<string, unknown>>;
 }
 ```
 
-Details shared by args and flags. `type` is the value type's name, e.g. `string`, `url`, or `boolean`/`count` for switches. `default` is the raw default value, only meaningful when `hasDefault`. `options` is everything passed to the creator.
+Details shared by args and flags. `type` is the value type's name, e.g. `string`, `url`, or `boolean`/`count` for switches. `separator` is what each value of a `multiple` param is split on, if anything. `default` is the raw default value, only meaningful when `hasDefault`. `options` is everything passed to the creator.
 
 ## `HelpArg`
 

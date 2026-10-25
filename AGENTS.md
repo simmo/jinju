@@ -9,7 +9,7 @@ Every change that affects users, the public API, the build or tooling must updat
 - Add entries under `## [Unreleased]`, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Use these subheadings, in this order, creating them as needed: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 - Write one line per change, from a user's point of view. Wrap API names in backticks.
-- Breaking changes go under `Changed` or `Removed` and must say what to do instead.
+- Breaking changes go under `Changed` or `Removed`, start with `**Breaking:**`, come before the other entries in their section, and must say what to do instead.
 - If a change revises something already listed under `[Unreleased]`, edit that entry. Don't add a second one.
 - Never edit released sections (`## [x.y.z]`). Release tooling (`release-it` with `keep-a-changelog`) moves `[Unreleased]` into a version.
 - Skip the changelog only for changes with no external effect, such as test-only edits or internal refactors. Say so when reporting the change.
@@ -25,6 +25,14 @@ The docs site (VitePress, in `docs/`) is the reference for users. Every change t
 - `README.md` is a short introduction that links to the site. Don't copy the reference into it.
 - Every page needs a `description` in its frontmatter: one sentence saying what the page covers. It's the page's meta description and its summary in `llms.txt`.
 - `npm run format` also formats code inside the docs. Run it before `docs:build`, since a reformatted line can move a `^?` marker.
+
+Before reporting a change as done, check the docs against the code, not from memory. Nothing checks the API reference's signatures or tables automatically:
+
+- **Signatures.** For every export you changed, read its declaration in `src/` and copy its signature into `docs/api/` from it: type parameters in order, with their constraints and defaults, then parameter and return types. A documented signature must be valid TypeScript that matches the real one, not a sketch.
+- **Tables.** Options and field tables (`FlagOptions`, `ProgramConfig`, `HelpData`, …) must list every property of the interface, with current defaults, and nothing that's gone.
+- **Every mention.** Search `docs/` for each name you changed or added (`grep -rn 'name' docs/guide docs/api`) and update each hit, guides included, not just the page you started from.
+- **Output.** Rerun any example whose output a page shows, and copy the new output.
+- **Compatibility.** Compare each changed export with the last release (`git show <tag>:src/<file>.ts`). Type parameters (their order and names) and option names are part of the public API: reordering or renaming them breaks callers. Avoid that, or list it under `Changed` as a breaking change.
 
 How the site is published:
 

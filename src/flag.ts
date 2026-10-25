@@ -1,7 +1,7 @@
 import {
 	type Defined,
-	type DefaultValue,
-	type IsMultiple,
+	type DefaultValues,
+	type MultipleOptions,
 	Param,
 	type ParamInit,
 	type Toggle,
@@ -16,10 +16,13 @@ import {
 	type NumberOptions,
 	type Parse,
 	parseBoolean,
+	parseDate,
 	parseCount,
 	parseDirectory,
 	parseEmail,
 	parseFile,
+	parseJson,
+	parseEntry,
 	parseNumber,
 	parseString,
 	parseUrl,
@@ -48,21 +51,27 @@ export class Flag<T, V extends Defined> extends Param<T, V> {
 	/** Must be provided. Clears any default. */
 	required<R extends boolean = true>(
 		required: R = true as R,
-	): Flag<(IsMultiple<T, V> extends true ? V[] : V) | (R extends true ? never : undefined), V> {
+	): Flag<Exclude<T, undefined> | (R extends true ? never : undefined), V> {
 		// Same runtime class; only the type parameters change.
 		return this.setRequired(required) as never;
 	}
 
-	/** Accept repeated values, collected into an array. Converts any default. */
-	multiple<M extends boolean = true>(
+	/**
+	 * Accept repeated values, collected into an array. Pass
+	 * `{ separator: ',' }` to also split each value: `--tag a,b`.
+	 */
+	multiple<M extends boolean | MultipleOptions = true>(
 		allow: M = true as M,
-	): Flag<(M extends true ? V[] : V) | (undefined extends T ? undefined : never), V> {
+	): Flag<(M extends false ? V : V[]) | (undefined extends T ? undefined : never), V> {
 		return this.setMultiple(allow) as never;
 	}
 
-	/** Value used when absent. Clears `required`. */
-	default(value: DefaultValue<T, V>): Flag<IsMultiple<T, V> extends true ? V[] : V, V> {
-		return this.setDefault(value) as never;
+	/**
+	 * Values used when absent: `.default('x')`, or `.default('a', 'b')` for a `multiple` one.
+	 * Each argument is one value, even an array (e.g. an `entry` pair). Clears `required`.
+	 */
+	default(...values: DefaultValues<T, V>): Flag<Exclude<T, undefined>, V> {
+		return this.setDefault(values) as never;
 	}
 }
 
@@ -79,7 +88,7 @@ export class Switch<T> extends Param<T, T> {
 
 	/** Value used when the switch is absent. */
 	default(value: T): Switch<T> {
-		return this.setDefault(value);
+		return this.setDefault([value]);
 	}
 
 	/** Resolves from occurrences: `--x` → `true`, `--no-x` → `false`. */
@@ -108,7 +117,7 @@ const toggle = <V>(valueName: string, initial: V, reduce: Toggle<V>, parse: Pars
 		// Switches don't take values on the command line; `parse` reads them from `env`.
 		const value = { name: valueName, parse: (input: string) => parse(input, {}) };
 		const state = { required: false, multiple: false, hasDefault: true };
-		return new Switch<V>({ value, options, state, defaultValue: initial, toggle: reduce });
+		return new Switch<V>({ value, options, state, defaults: [initial], toggle: reduce });
 	};
 };
 
@@ -139,12 +148,20 @@ export const flag = {
 	) =>
 		// `S` produces `SchemaOutput<S>` by definition; TypeScript can't see that for generic `S`.
 		custom(schemaParser(schema as StandardSchemaV1<unknown, SchemaOutput<S>>), valueName),
+	/** An ISO 8601 date (`2026-10-25`) or date and time (`2026-10-25T14:30`), as a `Date`. */
+	date: custom(parseDate, 'date'),
 	/** Path to a directory, resolved to an absolute path. */
 	directory: custom(parseDirectory, 'directory'),
 	email: custom(parseEmail, 'email'),
 	/** Path to a file, resolved to an absolute path. */
 	file: custom(parseFile, 'file'),
-	number: custom<number, NumberOptions>(parseNumber, 'number'),
+	/** Any JSON value: `--data '{"a":1}'`. */
+	json: custom(parseJson, 'json'),
+	/** `key=value`, as a `[key, value]` pair. With `.multiple()`, pass to `Object.fromEntries`. */
+	entry: custom(parseEntry, 'key=value'),
+	number: custom<number, NumberOptions>(parseNumber, 'number') as <const C extends number = number>(
+		options: FlagOptions & NumberOptions<C>,
+	) => Flag<NoInfer<C> | undefined, NoInfer<C>>,
 	string: custom(parseString, 'string') as <const C extends string = string>(
 		options: FlagOptions & StringOptions<C>,
 	) => Flag<NoInfer<C> | undefined, NoInfer<C>>,

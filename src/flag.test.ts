@@ -15,13 +15,16 @@ describe('value flags', () => {
 		['email', flag.email(d)],
 		['directory', flag.directory(d)],
 		['file', flag.file(d)],
+		['date', flag.date(d)],
+		['json', flag.json(d)],
+		['key=value', flag.entry(d)],
 	])('%s takes a value and starts optional', (name, created) => {
 		expect(created).toBeInstanceOf(Flag);
 		expect(
 			created
 				.required()
 				.multiple()
-				.default(['x'] as never),
+				.default('x' as never),
 		).toBeInstanceOf(Flag);
 		const param = toParam(created);
 		expect(param.kind).toBe('flag');

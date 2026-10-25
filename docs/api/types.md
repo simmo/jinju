@@ -110,12 +110,15 @@ abstract class Param<T = unknown, V = unknown> {
 	readonly value: ValueType<V>;
 	readonly options: ParamOptions;
 	readonly state: ParamState;
-	readonly defaultValue: unknown;
-	resolve(inputs: readonly string[], label: string): Promise<Result<unknown>>;
+	readonly defaults: readonly unknown[];
+	get defaultValue(): unknown;
+	resolve(given: readonly string[], label: string): Promise<Result<unknown>>;
 }
 ```
 
 The base class of [`Flag`](./flag#flag-class), [`Switch`](./flag#switch) and [`Arg`](./arg#arg-class). `T` is the resolved type, e.g. `string[] | undefined`, and `V` is what one input parses to. `resolve` parses raw inputs into the final value, applying the modifiers.
+
+`defaults` holds the values given to `.default()`. `defaultValue` is the default as `run` receives it: all of them for a `multiple` param (in a new array), otherwise the first.
 
 ### `ParamKind`
 
@@ -131,7 +134,7 @@ interface ParamOptions {
 	alias?: string;
 	hidden?: boolean;
 	name?: string;
-	choices?: readonly string[];
+	choices?: readonly (string | number)[];
 	env?: string;
 }
 ```
@@ -145,10 +148,21 @@ interface ParamState {
 	readonly required: boolean;
 	readonly multiple: boolean;
 	readonly hasDefault: boolean;
+	readonly separator?: string;
 }
 ```
 
-The modifier state at runtime. At the type level, it's derived from `T` and `V`.
+The modifier state at runtime. At the type level, it's derived from `T` and `V`. `separator` is set by `.multiple({ separator })`.
+
+### `MultipleOptions`
+
+```ts
+interface MultipleOptions {
+	separator?: string;
+}
+```
+
+What a flag's `.multiple()` accepts instead of a boolean. With a `separator`, each value is also split on it, trimmed, with empty values dropped: `--tag a,b` is two values. Environment variables are split too. Args don't take it.
 
 ### `ParamInit`
 
@@ -157,7 +171,7 @@ interface ParamInit<V> {
 	value: ValueType<V>;
 	options: ParamOptions;
 	state: ParamState;
-	defaultValue?: unknown;
+	defaults?: readonly unknown[];
 }
 ```
 
@@ -188,18 +202,22 @@ A parsed value: anything but `undefined`, which means "not provided".
 ### `IsMultiple`
 
 ```ts
-type IsMultiple<T, V>;
+type IsMultiple<T, V> = [Exclude<T, undefined>] extends [V[]] ? true : false;
 ```
 
 `true` when resolved type `T` collects `V` values into an array.
 
-### `DefaultValue`
+### `DefaultValues`
 
 ```ts
-type DefaultValue<T, V> = IsMultiple<T, V> extends true ? readonly [V, ...V[]] : V;
+type DefaultValues<T, V> = [Exclude<T, undefined>] extends [V[]]
+	? [value: V, ...values: V[]]
+	: [Exclude<T, undefined>] extends [V]
+		? [value: V]
+		: [value: V, ...values: V[]];
 ```
 
-What `.default()` accepts: a non-empty array for `.multiple()` params, so `.multiple(false)` can take the first value.
+What `.default(...values)` takes: one value for a single param, one or more for a `.multiple()` one. Each argument is one value, even an array.
 
 ## Values
 
@@ -235,12 +253,15 @@ interface StringOptions<C extends string = string> {
 ### `NumberOptions`
 
 ```ts
-interface NumberOptions {
+interface NumberOptions<C extends number = number> {
+	choices?: readonly C[];
 	min?: number;
 	max?: number;
 	integer?: boolean;
 }
 ```
+
+`choices` restricts input to these values, and the type is their union.
 
 ### `PathOptions`
 
@@ -251,6 +272,14 @@ interface PathOptions {
 ```
 
 `exists` checks the path exists and is the right kind of entry (file or directory).
+
+### `JsonValue`
+
+```ts
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+```
+
+Any value JSON can represent. What `flag.json` and `arg.json` parse to.
 
 ## Standard Schema
 

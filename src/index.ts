@@ -51,9 +51,10 @@ export type {
 	StandardSchemaV1,
 } from './schema';
 export type {
-	DefaultValue,
+	DefaultValues,
 	Defined,
 	IsMultiple,
+	MultipleOptions,
 	Param,
 	ParamInit,
 	ParamKind,
@@ -77,4 +78,11 @@ export {
 } from './help';
 export { jinju, Program, type ProgramConfig } from './program';
 export type { CheckTree, CommandTree, NodeErrors, SegmentError, TreeErrors } from './tree';
-export type { NumberOptions, Parse, PathOptions, StringOptions, ValueType } from './value';
+export type {
+	JsonValue,
+	NumberOptions,
+	Parse,
+	PathOptions,
+	StringOptions,
+	ValueType,
+} from './value';

@@ -10,9 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Unknown flags in non-strict mode: with `strict: false`, `run` receives the flags a command doesn't define in `unknown`, as given (e.g. `--foo=bar`), so it can pass them on to another tool. `strict` can be set on the program, a scope or a command, and the nearest setting wins
+- Value types `flag.date` / `arg.date` (ISO 8601, as a `Date`), `flag.json` / `arg.json` (any JSON, typed as `JsonValue`) and `flag.entry` / `arg.entry` (`key=value` as a `[key, value]` pair, for `-D key=value`), and `choices` on `flag.number` / `arg.number`, which narrows the type
+- `.multiple({ separator: ',' })` on a flag also splits each value, so `--tag a,b` gives two values (also for values from environment variables). Help shows the separator, and `HelpParam` has a `separator` field
+
+### Changed
+
+- **Breaking:** `.default()` takes each default as its own argument. Replace `.multiple().default(['a', 'b'])` with `.multiple().default('a', 'b')`; single defaults (`.default('x')`) are unchanged. An array is now always one value (e.g. an `entry` pair). Modifiers work in any order, since a param keeps all its default values and a single one uses the first. `DefaultValue` is now `DefaultValues` (the argument list), `ParamInit.defaultValue` is now `defaults`, and `Param.defaults` holds the values
+- **Breaking:** `HelpParam.choices` and `ParamOptions.choices` are `readonly (string | number)[]`, since `flag.number` and `arg.number` take `choices`. Custom help templates that treat choices as strings should convert them, e.g. with `String(choice)`
 
 ### Fixed
 
+- `.multiple(on)` with a non-literal `boolean` keeps its `V | V[]` type through `.required()` and `.default()`, which previously narrowed it to `V`
+- Help shows object defaults as JSON and `Date` defaults in ISO 8601, instead of `[object Object]` and a local date string, and falls back to `String(value)` for values JSON can't represent. `HelpTemplate.formatValue` takes the value type's name as an optional second argument
 - Docs favicons include PNG, ICO and Apple touch icon versions alongside the SVG, so they show in Safari too
 
 ## [0.1.1] - 2026-10-25

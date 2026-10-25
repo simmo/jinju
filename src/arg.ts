@@ -1,4 +1,4 @@
-import { type Defined, type DefaultValue, type IsMultiple, Param } from './param';
+import { type Defined, type DefaultValues, Param } from './param';
 import {
 	type CheckSchemaInput,
 	type SchemaOutput,
@@ -8,9 +8,12 @@ import {
 import {
 	type NumberOptions,
 	type Parse,
+	parseDate,
 	parseDirectory,
 	parseEmail,
 	parseFile,
+	parseJson,
+	parseEntry,
 	parseNumber,
 	parseString,
 	parseUrl,
@@ -38,21 +41,27 @@ export class Arg<T, V extends Defined, N extends string | undefined = undefined>
 	/** Must be provided. Clears any default. */
 	required<R extends boolean = true>(
 		required: R = true as R,
-	): Arg<(IsMultiple<T, V> extends true ? V[] : V) | (R extends true ? never : undefined), V, N> {
+	): Arg<Exclude<T, undefined> | (R extends true ? never : undefined), V, N> {
 		// Same runtime class; only the type parameters change.
 		return this.setRequired(required) as never;
 	}
 
-	/** Accept repeated values, collected into an array. Converts any default. */
+	/**
+	 * Accept several values, one per word, collected into an array.
+	 * Unlike flags, args take no separator: the words already separate the values.
+	 */
 	multiple<M extends boolean = true>(
 		allow: M = true as M,
-	): Arg<(M extends true ? V[] : V) | (undefined extends T ? undefined : never), V, N> {
+	): Arg<(M extends false ? V : V[]) | (undefined extends T ? undefined : never), V, N> {
 		return this.setMultiple(allow) as never;
 	}
 
-	/** Value used when absent. Clears `required`. */
-	default(value: DefaultValue<T, V>): Arg<IsMultiple<T, V> extends true ? V[] : V, V, N> {
-		return this.setDefault(value) as never;
+	/**
+	 * Values used when absent: `.default('x')`, or `.default('a', 'b')` for a `multiple` one.
+	 * Each argument is one value, even an array (e.g. an `entry` pair). Clears `required`.
+	 */
+	default(...values: DefaultValues<T, V>): Arg<Exclude<T, undefined>, V, N> {
+		return this.setDefault(values) as never;
 	}
 }
 
@@ -85,12 +94,24 @@ export const arg = {
 	) =>
 		// `S` produces `SchemaOutput<S>` by definition; TypeScript can't see that for generic `S`.
 		custom(schemaParser(schema as StandardSchemaV1<unknown, SchemaOutput<S>>), valueName),
+	/** An ISO 8601 date (`2026-10-25`) or date and time (`2026-10-25T14:30`), as a `Date`. */
+	date: custom(parseDate, 'date'),
 	/** Path to a directory, resolved to an absolute path. */
 	directory: custom(parseDirectory, 'directory'),
 	email: custom(parseEmail, 'email'),
 	/** Path to a file, resolved to an absolute path. */
 	file: custom(parseFile, 'file'),
-	number: custom<number, NumberOptions>(parseNumber, 'number'),
+	/** Any JSON value: `--data '{"a":1}'`. */
+	json: custom(parseJson, 'json'),
+	/** `key=value`, as a `[key, value]` pair. With `.multiple()`, pass to `Object.fromEntries`. */
+	entry: custom(parseEntry, 'key=value'),
+	// `N` comes first, as it did before `choices`, so `arg.number<'count'>(…)` keeps working.
+	number: custom<number, NumberOptions>(parseNumber, 'number') as <
+		const N extends string | undefined = undefined,
+		const C extends number = number,
+	>(
+		options: ArgOptions<N> & NumberOptions<C>,
+	) => Arg<NoInfer<C> | undefined, NoInfer<C>, NoInfer<N>>,
 	string: custom(parseString, 'string') as <
 		const C extends string = string,
 		const N extends string | undefined = undefined,

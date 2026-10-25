@@ -10,14 +10,17 @@ Creators for positional args. See the [Args guide](../guide/args) for usage.
 
 ```ts
 const arg: {
-	string<C extends string = string, N extends string | undefined = undefined>(options: ArgOptions<N> & StringOptions<C>): Arg<C | undefined, C, N>;
-	number<N>(options: ArgOptions<N> & NumberOptions): Arg<number | undefined, number, N>;
-	url<N>(options: ArgOptions<N>): Arg<URL | undefined, URL, N>;
-	email<N>(options: ArgOptions<N>): Arg<string | undefined, string, N>;
-	directory<N>(options: ArgOptions<N> & PathOptions): Arg<string | undefined, string, N>;
-	file<N>(options: ArgOptions<N> & PathOptions): Arg<string | undefined, string, N>;
-	custom<V, O>(parse: Parse<V, O>, valueName?: string): <N>(options: ArgOptions<N> & O) => Arg<V | undefined, V, N>;
-	schema<S extends StandardSchemaV1>(schema: S, valueName?: string): <N>(options: ArgOptions<N>) => Arg<SchemaOutput<S> | undefined, SchemaOutput<S>, N>;
+	string<const C extends string = string, const N extends string | undefined = undefined>(options: ArgOptions<N> & StringOptions<C>): Arg<NoInfer<C> | undefined, NoInfer<C>, NoInfer<N>>;
+	number<const N extends string | undefined = undefined, const C extends number = number>(options: ArgOptions<N> & NumberOptions<C>): Arg<NoInfer<C> | undefined, NoInfer<C>, NoInfer<N>>;
+	url<const N extends string | undefined = undefined>(options: ArgOptions<N>): Arg<URL | undefined, URL, NoInfer<N>>;
+	email<const N extends string | undefined = undefined>(options: ArgOptions<N>): Arg<string | undefined, string, NoInfer<N>>;
+	directory<const N extends string | undefined = undefined>(options: ArgOptions<N> & PathOptions): Arg<string | undefined, string, NoInfer<N>>;
+	file<const N extends string | undefined = undefined>(options: ArgOptions<N> & PathOptions): Arg<string | undefined, string, NoInfer<N>>;
+	date<const N extends string | undefined = undefined>(options: ArgOptions<N>): Arg<Date | undefined, Date, NoInfer<N>>;
+	json<const N extends string | undefined = undefined>(options: ArgOptions<N>): Arg<JsonValue | undefined, JsonValue, NoInfer<N>>;
+	entry<const N extends string | undefined = undefined>(options: ArgOptions<N>): Arg<[key: string, value: string] | undefined, [key: string, value: string], NoInfer<N>>;
+	custom<V extends Defined, O extends object = {}>(parse: Parse<V, O>, valueName?: string): <const N extends string | undefined = undefined>(options: ArgOptions<N> & O) => Arg<V | undefined, V, NoInfer<N>>;
+	schema<S extends StandardSchemaV1<unknown, Defined>>(schema: S & CheckSchemaInput<S>, valueName?: string): <const N extends string | undefined = undefined>(options: ArgOptions<N>) => Arg<SchemaOutput<S> | undefined, SchemaOutput<S>, NoInfer<N>>;
 };
 ```
 
@@ -31,13 +34,17 @@ A positional arg. `T` is the resolved type, `V` is what one value parses to, and
 class Arg<T, V extends Defined, N extends string | undefined = undefined> extends Param<T, V> {
 	readonly kind: 'arg';
 	readonly options: ArgOptions<N>;
-	required(required?: boolean): Arg<…>;
-	multiple(allow?: boolean): Arg<…>;
-	default(value: DefaultValue<T, V>): Arg<…>;
+	required<R extends boolean = true>(
+		required?: R,
+	): Arg<Exclude<T, undefined> | (R extends true ? never : undefined), V, N>;
+	multiple<M extends boolean = true>(
+		allow?: M,
+	): Arg<(M extends false ? V : V[]) | (undefined extends T ? undefined : never), V, N>;
+	default(...values: DefaultValues<T, V>): Arg<Exclude<T, undefined>, V, N>;
 }
 ```
 
-The modifiers work like [`Flag`](./flag#flag-class)'s. Args are optional by default, and at most one arg in a command can be `.multiple()`.
+The modifiers work like [`Flag`](./flag#flag-class)'s, except that `.multiple()` takes no [separator](./types#multipleoptions): each word is one value. Args are optional by default, and at most one arg in a command can be `.multiple()`.
 
 ## `ArgOptions`
 
