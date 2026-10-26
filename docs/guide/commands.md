@@ -34,7 +34,7 @@ const deploy = command({
 | `strict`      | Reject unknown flags. Overrides the scope's and the program's setting. See [Passing on unknown flags](#passing-on-unknown-flags). |
 | `flags`       | An object of [flags](./flags). Keys become kebab-case names.                                                                      |
 | `args`        | A tuple of [args](./args).                                                                                                        |
-| `run`         | The handler. Receives `{ flags, args, argv, unknown }`.                                                                           |
+| `run`         | The handler. Receives `{ flags, args, argv, unknown, signal }`.                                                                   |
 
 ## The `run` handler
 
@@ -44,6 +44,7 @@ const deploy = command({
 - `args`: a tuple of parsed arg values, in order
 - `argv`: the raw argv the command parsed, with the command path removed
 - `unknown`: flags the command doesn't define, as given. Always empty unless the command isn't strict; see [Passing on unknown flags](#passing-on-unknown-flags)
+- `signal`: an `AbortSignal` that's aborted when the run is cancelled, e.g. with Ctrl+C; see [Cancellation](#cancellation)
 
 `run` may be async. Its return value sets the exit code:
 
@@ -53,6 +54,29 @@ const deploy = command({
 - any other error is rethrown from `app.run()`
 
 `run` is only called when all input is valid. All parsing and validation errors are collected first and reported together.
+
+## Cancellation
+
+While a command runs, Ctrl+C (`SIGINT`) or `SIGTERM` cancels it: `run`'s `signal` is aborted. Pass the signal to anything that accepts one, such as `fetch`, child processes and timers, or check `signal.aborted` between steps, so the command can stop and clean up:
+
+```ts twoslash
+import { arg, command } from 'jinju';
+
+const download = command({
+	description: 'Download a file',
+	args: [arg.url({ name: 'url', description: 'What to download' }).required()],
+	run: async ({ args: [url], signal }) => {
+		const response = await fetch(url, { signal });
+		console.log(await response.text());
+	},
+});
+```
+
+A cancelled run exits with `128` plus the signal's number: `130` for Ctrl+C and `143` for `SIGTERM`, unless `run` returns an exit code of its own. If `run` rejects with the abort error, as `fetch` does once the signal is aborted, that's how the run ended rather than a crash, so it isn't rethrown.
+
+Only the first signal is handled. A second Ctrl+C gets Node's default behaviour, which ends the process straight away, so users can always stop a command that doesn't check its signal. That's unless something else in the app also listens for the signal, which turns Node's default off.
+
+The program's `signals` option chooses which signals cancel a command, and `signals: []` leaves them all to Node. `app.run(argv, { signal })` adds an `AbortSignal` of your own, which also cancels the command, with exit code `130`. See [Testing](./testing#cancellation).
 
 ## Passing on unknown flags
 

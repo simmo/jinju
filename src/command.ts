@@ -24,6 +24,11 @@ export interface RunContext<F extends FlagRecord, A extends ArgList> {
 	 * when the command isn't strict; otherwise they're errors and `run` isn't called.
 	 */
 	unknown: readonly string[];
+	/**
+	 * Aborted when the run is cancelled, e.g. by Ctrl+C. Pass it to `fetch`, child processes
+	 * and timers, or check `signal.aborted`, to stop early.
+	 */
+	signal: AbortSignal;
 }
 
 /** Return a number to set the exit code. */
@@ -290,10 +295,13 @@ export class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgL
 		return { ok: true, value: { args, argv, flags, unknown } };
 	}
 
-	/** Invokes the handler with parsed input. */
-	execute(parsed: Parsed): RunResult {
-		type Run = (context: Required<Parsed>) => RunResult;
-		return (this.config.run as Run)({ ...parsed, unknown: parsed.unknown ?? [] });
+	/**
+	 * Invokes the handler with parsed input. `signal` cancels the run; without one, it's
+	 * never aborted.
+	 */
+	execute(parsed: Parsed, signal: AbortSignal = new AbortController().signal): RunResult {
+		type Run = (context: Required<Parsed> & { signal: AbortSignal }) => RunResult;
+		return (this.config.run as Run)({ ...parsed, unknown: parsed.unknown ?? [], signal });
 	}
 }
 

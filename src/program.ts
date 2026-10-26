@@ -1,3 +1,4 @@
+import { constants } from 'node:os';
 import { basename, extname } from 'node:path';
 
 import { kebabCase } from './case';
@@ -38,7 +39,24 @@ export interface ProgramConfig<T extends CommandTree = CommandTree> {
 	stderr?: (text: string) => void;
 	/** Receives the exit code. Defaults to setting `process.exitCode`. */
 	exit?: (code: number) => void;
+	/**
+	 * Process signals that cancel a running command, aborting its `signal`. Defaults to
+	 * `['SIGINT', 'SIGTERM']`; `[]` leaves signals to Node.
+	 */
+	signals?: readonly NodeJS.Signals[];
 }
+
+export interface RunOptions {
+	/** Also cancels the command when aborted, e.g. in tests or when embedding the program. */
+	signal?: AbortSignal;
+}
+
+/** The exit code of a run cancelled other than by a process signal: as for Ctrl+C. */
+const CANCELLED = 130;
+
+/** Whether `error` is how a cancelled operation reports itself (e.g. `fetch` with `signal`). */
+const isAbort = (error: unknown, signal: AbortSignal) =>
+	error === signal.reason || (error instanceof Error && error.name === 'AbortError');
 
 interface Node {
 	path: HelpPathPart[];
@@ -168,8 +186,11 @@ export class Program {
 	}
 
 	/** Routes and runs argv, returning (and reporting via `exit`) the exit code. */
-	async run(argv: readonly string[] = process.argv.slice(2)): Promise<number> {
-		const code = await this.#execute(argv);
+	async run(
+		argv: readonly string[] = process.argv.slice(2),
+		options: RunOptions = {},
+	): Promise<number> {
+		const code = await this.#execute(argv, options);
 		(this.#config.exit ?? ((value) => (process.exitCode = value)))(code);
 		return code;
 	}
@@ -185,7 +206,7 @@ export class Program {
 		return this.#help(node);
 	}
 
-	async #execute(argv: readonly string[]): Promise<number> {
+	async #execute(argv: readonly string[], options: RunOptions): Promise<number> {
 		const match = this.#route(argv);
 		const { captured, node, rest } = match;
 		const index = indexFlags({ ...this.#builtins, ...node.command?.flags });
@@ -224,13 +245,45 @@ export class Program {
 		});
 		if (!result.ok) return this.#fail(result.errors, match);
 
+		const cancel = this.#cancellation(options.signal);
 		try {
-			const code = await node.command.execute(result.value);
-			return typeof code === 'number' ? code : 0;
+			const code = await node.command.execute(result.value, cancel.signal);
+			if (typeof code === 'number') return code;
+			return cancel.signal.aborted ? cancel.code : 0;
 		} catch (error) {
 			if (error instanceof JinjuError) return this.#fail([error], match);
+			if (cancel.signal.aborted && isAbort(error, cancel.signal)) return cancel.code;
 			throw error;
+		} finally {
+			cancel.stop();
 		}
+	}
+
+	/**
+	 * A signal aborted by the first of the configured process signals (or by `external`).
+	 * Listening stops after that signal, so a second one gets Node's default handling (unless
+	 * something else listens for it), which
+	 * ends the process even if the command ignores the cancellation.
+	 */
+	#cancellation(external: AbortSignal | undefined) {
+		const controller = new AbortController();
+		const listeners = (this.#config.signals ?? ['SIGINT', 'SIGTERM']).map(
+			(name) => [name, () => cancel(name)] as const,
+		);
+		const state = {
+			signal: external ? AbortSignal.any([controller.signal, external]) : controller.signal,
+			code: CANCELLED,
+			stop: () => {
+				for (const [name, listener] of listeners) process.off(name, listener);
+			},
+		};
+		const cancel = (name: NodeJS.Signals) => {
+			state.stop();
+			state.code = 128 + constants.signals[name];
+			controller.abort(new DOMException(`Cancelled by ${name}`, 'AbortError'));
+		};
+		for (const [name, listener] of listeners) process.on(name, listener);
+		return state;
 	}
 
 	/**

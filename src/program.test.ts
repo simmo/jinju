@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { arg } from './arg';
-import { command, scope } from './command';
+import { type AnyCommand, command, scope } from './command';
 import { type ErrorData, ErrorTemplate } from './error-template';
 import { ConfigError, JinjuError, UnknownCommandError } from './errors';
 import { flag } from './flag';
@@ -853,5 +853,150 @@ describe('env', () => {
 			},
 		});
 		expect(program.help(['x'])).toContain('--port <number>  Port (env: PORT)');
+	});
+});
+
+describe('cancellation', () => {
+	const listeners = () => [process.listenerCount('SIGINT'), process.listenerCount('SIGTERM')];
+	/** Resolved by the next `waiting` command once it's running. */
+	let started = Promise.withResolvers<void>();
+	/** A command that waits until cancelled, then does what `then` says. */
+	const waiting = (then: (signal: AbortSignal) => unknown) =>
+		command({
+			description: 'Wait',
+			run: ({ signal }) =>
+				new Promise<void | number>((resolve, reject) => {
+					signal.addEventListener('abort', () => {
+						try {
+							resolve(then(signal) as void | number);
+						} catch (error) {
+							reject(error);
+						}
+					});
+					started.resolve();
+				}),
+		});
+	/** Runs `wait`, cancelling it with `cancel` once the command has started. */
+	const cancelled = async (wait: AnyCommand, cancel: NodeJS.Signals | AbortController) => {
+		started = Promise.withResolvers<void>();
+		const { output, program } = setup({ commands: { wait } });
+		const signal = cancel instanceof AbortController ? cancel.signal : undefined;
+		const running = program.run(['wait'], signal ? { signal } : {});
+		await started.promise;
+		if (cancel instanceof AbortController) cancel.abort();
+		else process.emit(cancel);
+		return { code: await running, output };
+	};
+
+	test('Ctrl+C aborts the signal and exits with 130', async () => {
+		const before = listeners();
+		const { code, output } = await cancelled(
+			waiting(() => {}),
+			'SIGINT',
+		);
+		expect(code).toBe(130);
+		expect(output.code).toBe(130);
+		expect(listeners()).toEqual(before);
+	});
+
+	test('SIGTERM exits with 143, and the reason names the signal', async () => {
+		const reasons: unknown[] = [];
+		const { code } = await cancelled(
+			waiting((signal) => void reasons.push(signal.reason)),
+			'SIGTERM',
+		);
+		expect(code).toBe(143);
+		expect(reasons[0]).toMatchObject({ name: 'AbortError', message: 'Cancelled by SIGTERM' });
+	});
+
+	test('listening stops after the first signal', async () => {
+		const before = listeners();
+		const counts: number[][] = [];
+		await cancelled(
+			waiting(() => void counts.push(listeners())),
+			'SIGINT',
+		);
+		expect(counts).toEqual([before]);
+	});
+
+	test('a code returned from run wins', async () => {
+		expect(
+			(
+				await cancelled(
+					waiting(() => 3),
+					'SIGINT',
+				)
+			).code,
+		).toBe(3);
+	});
+
+	test('abort errors thrown after cancelling are not crashes', async () => {
+		const rethrow = waiting((signal) => {
+			throw signal.reason;
+		});
+		expect((await cancelled(rethrow, 'SIGINT')).code).toBe(130);
+		const own = waiting(() => {
+			throw Object.assign(new Error('stopped'), { name: 'AbortError' });
+		});
+		expect((await cancelled(own, 'SIGINT')).code).toBe(130);
+		const other = waiting(() => {
+			throw new Error('boom');
+		});
+		await expect(cancelled(other, 'SIGINT')).rejects.toThrow('boom');
+		const jinju = waiting(() => {
+			throw new JinjuError('nope');
+		});
+		const reported = await cancelled(jinju, 'SIGINT');
+		expect(reported.code).toBe(1);
+		expect(reported.output.stderr).toContain('nope');
+	});
+
+	test('an abort error without cancelling is a crash', async () => {
+		const { program } = setup({
+			commands: {
+				fail: command({
+					description: 'x',
+					run: () => {
+						throw Object.assign(new Error('stopped'), { name: 'AbortError' });
+					},
+				}),
+			},
+		});
+		await expect(program.run(['fail'])).rejects.toThrow('stopped');
+	});
+
+	test('an outside signal cancels too, with 130', async () => {
+		expect(
+			(
+				await cancelled(
+					waiting(() => {}),
+					new AbortController(),
+				)
+			).code,
+		).toBe(130);
+	});
+
+	test('signals: [] leaves process signals alone', async () => {
+		const before = listeners();
+		const seen: number[][] = [];
+		const { program } = setup({
+			signals: [],
+			commands: {
+				check: command({ description: 'x', run: () => void seen.push(listeners()) }),
+			},
+		});
+		expect(await program.run(['check'])).toBe(0);
+		expect(seen).toEqual([before]);
+	});
+
+	test('the signal is never aborted outside a program', async () => {
+		const seen: boolean[] = [];
+		const check = command({
+			description: 'x',
+			run: ({ signal }) => void seen.push(signal.aborted),
+		});
+		const parsed = await check.parse([]);
+		if (parsed.ok) await check.execute(parsed.value);
+		expect(seen).toEqual([false]);
 	});
 });

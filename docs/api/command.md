@@ -51,10 +51,11 @@ interface RunContext<F extends FlagRecord, A extends ArgList> {
 	args: InferArgs<A>;
 	argv: readonly string[];
 	unknown: readonly string[];
+	signal: AbortSignal;
 }
 ```
 
-What `run` receives: typed flags and args, the argv the command parsed (without the command path), and `unknown`: flags the command doesn't define, as given (e.g. `--foo=bar`), in order. `unknown` is only filled when the command isn't strict; otherwise unknown flags are errors and `run` isn't called.
+What `run` receives: typed flags and args, the argv the command parsed (without the command path), and `unknown`: flags the command doesn't define, as given (e.g. `--foo=bar`), in order. `unknown` is only filled when the command isn't strict; otherwise unknown flags are errors and `run` isn't called. `signal` is aborted when the run is [cancelled](../guide/commands#cancellation).
 
 ## `RunResult`
 
@@ -76,7 +77,7 @@ class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgList> {
 	get description(): string;
 	get params(): readonly Param[];
 	parse(argv: readonly string[], options?: ParseOptions): Promise<Result<Parsed>>;
-	execute(parsed: Parsed): RunResult;
+	execute(parsed: Parsed, signal?: AbortSignal): RunResult;
 }
 ```
 
@@ -88,7 +89,7 @@ class Command<F extends FlagRecord = FlagRecord, A extends ArgList = ArgList> {
 | `strict`    | The command's own `strict`, or else its innermost scope's that sets one. `undefined` when none do, so `parse` uses its `strict` option. |
 | `params`    | The args as [`Param`](./types#param)s.                                                                                                  |
 | `parse`     | Parses argv (without the command path) into flags and args.                                                                             |
-| `execute`   | Calls `run` with parsed input.                                                                                                          |
+| `execute`   | Calls `run` with parsed input, and `signal` (by default one that's never aborted).                                                      |
 
 Create commands with [`command`](#command) or `scope.command` rather than `new Command`.
 
