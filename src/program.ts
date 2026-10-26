@@ -261,7 +261,8 @@ export class Program {
 
 	/**
 	 * A signal aborted by the first of the configured process signals (or by `external`).
-	 * Listening stops after that signal, so a second one gets Node's default handling, which
+	 * Listening stops after that signal, so a second one gets Node's default handling (unless
+	 * something else listens for it), which
 	 * ends the process even if the command ignores the cancellation.
 	 */
 	#cancellation(external: AbortSignal | undefined) {

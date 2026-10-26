@@ -51,6 +51,8 @@ const clean = ({ flags }: RunContext<typeof cleanFlags, []>) => {
 command({ description: 'Clean', flags: cleanFlags, run: clean });
 ```
 
+To call such a handler yourself, e.g. in a unit test, pass the whole context: `clean({ flags: { force: true }, args: [], argv: [], unknown: [], signal: new AbortController().signal })`.
+
 ## Compile-time checks
 
 Some mistakes are reported as type errors as well as at runtime:

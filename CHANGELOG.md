@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** `RunContext` has two new fields, `unknown` and `signal`, which `run` always receives. Code that builds a context by hand, e.g. to unit-test a handler written separately, must add them: `unknown: []` and `signal: new AbortController().signal`
 - **Breaking:** `.default()` takes each default as its own argument. Replace `.multiple().default(['a', 'b'])` with `.multiple().default('a', 'b')`; single defaults (`.default('x')`) are unchanged. An array is now always one value (e.g. an `entry` pair). Modifiers work in any order, since a param keeps all its default values and a single one uses the first. `DefaultValue` is now `DefaultValues` (the argument list), `ParamInit.defaultValue` is now `defaults`, and `Param.defaults` holds the values
 - **Breaking:** `HelpParam.choices` and `ParamOptions.choices` are `readonly (string | number)[]`, since `flag.number` and `arg.number` take `choices`. Custom help templates that treat choices as strings should convert them, e.g. with `String(choice)`
 

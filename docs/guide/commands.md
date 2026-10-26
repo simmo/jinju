@@ -74,7 +74,7 @@ const download = command({
 
 A cancelled run exits with `128` plus the signal's number: `130` for Ctrl+C and `143` for `SIGTERM`, unless `run` returns an exit code of its own. If `run` rejects with the abort error, as `fetch` does once the signal is aborted, that's how the run ended rather than a crash, so it isn't rethrown.
 
-Only the first signal is handled. A second Ctrl+C gets Node's default behaviour, which ends the process straight away, so users can always stop a command that doesn't check its signal.
+Only the first signal is handled. A second Ctrl+C gets Node's default behaviour, which ends the process straight away, so users can always stop a command that doesn't check its signal. That's unless something else in the app also listens for the signal, which turns Node's default off.
 
 The program's `signals` option chooses which signals cancel a command, and `signals: []` leaves them all to Node. `app.run(argv, { signal })` adds an `AbortSignal` of your own, which also cancels the command, with exit code `130`. See [Testing](./testing#cancellation).
 

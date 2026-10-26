@@ -85,7 +85,7 @@ Parses `argv`, routes it to a command and runs it. `argv` defaults to `process.a
 
 Resolves to the exit code, which it also passes to `exit` (by default, setting `process.exitCode`). Help, `--version` and errors are written to `stdout` or `stderr`. It rejects only when a `run` handler throws an error that isn't a `JinjuError`, or the abort error of a cancelled run.
 
-While the command runs, the program listens for the `signals` in its config. The first one aborts the command's `signal`, and the run exits with `128` plus the signal's number (`130` for `SIGINT`), unless `run` returns an exit code. Listening then stops, so a second signal gets Node's default handling.
+While the command runs, the program listens for the `signals` in its config. The first one aborts the command's `signal`, and the run exits with `128` plus the signal's number (`130` for `SIGINT`), unless `run` returns an exit code. Listening then stops, so a second signal gets Node's default handling, unless something else in the app also listens for it.
 
 ### `help(path?)`
 
