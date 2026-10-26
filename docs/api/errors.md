@@ -19,19 +19,21 @@ class ErrorTemplate {
 	formatError(error: JinjuError): string;
 	formatHint(data: ErrorData): string;
 	formatCommand(data: ErrorData): string;
+	formatWarning(warning: string): string;
 }
 ```
 
 Renders error output, which is printed to stderr, from [`ErrorData`](#errordata). Extend it and override any method to change part of it, or `render` to replace it.
 
-| Method          | Default                                                       |
-| --------------- | ------------------------------------------------------------- |
-| `render`        | Joins `sections` with blank lines and adds a trailing newline |
-| `sections`      | `[errors, hint]`. The hint is left out with `hint: false`     |
-| `formatErrors`  | One line per error, from `formatError`                        |
-| `formatError`   | `error: <message>`                                            |
-| `formatHint`    | `Run 'app my-site deploy --help' for usage.`                  |
-| `formatCommand` | The command as typed, e.g. `app my-site deploy`               |
+| Method          | Default                                                                                                     |
+| --------------- | ----------------------------------------------------------------------------------------------------------- |
+| `render`        | Joins `sections` with blank lines and adds a trailing newline                                               |
+| `sections`      | `[errors, hint]`. The hint is left out with `hint: false`                                                   |
+| `formatErrors`  | One line per error, from `formatError`                                                                      |
+| `formatError`   | `error: <message>`                                                                                          |
+| `formatHint`    | `Run 'app my-site deploy --help' for usage.`                                                                |
+| `formatCommand` | The command as typed, e.g. `app my-site deploy`                                                             |
+| `formatWarning` | `warning: <message>`: one line, for a deprecated command or flag, printed to stderr before the command runs |
 
 ## `ErrorTemplateOptions`
 

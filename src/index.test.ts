@@ -214,6 +214,13 @@ describe('type exports', () => {
 		expectTypeOf<RunContext<{}, []>['signal']>().toEqualTypeOf<AbortSignal>();
 		expectTypeOf<RunOptions>().toHaveProperty('signal');
 		expectTypeOf<ProgramConfig>().toHaveProperty('signals');
+		expectTypeOf<CommandConfig<{}, [], unknown>['deprecated']>().toEqualTypeOf<
+			boolean | string | undefined
+		>();
+		expectTypeOf<FlagOptions['deprecated']>().toEqualTypeOf<boolean | string | undefined>();
+		expectTypeOf<HelpFlag['deprecated']>().toEqualTypeOf<true | string | undefined>();
+		expectTypeOf<HelpCommand['deprecated']>().toEqualTypeOf<true | string | undefined>();
+		expectTypeOf<HelpData['deprecated']>().toEqualTypeOf<true | string | undefined>();
 		expectTypeOf<Result<number>>().toEqualTypeOf<
 			{ ok: true; value: number } | { ok: false; errors: jinju.JinjuError[] }
 		>();

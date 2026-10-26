@@ -1000,3 +1000,74 @@ describe('cancellation', () => {
 		expect(seen).toEqual([false]);
 	});
 });
+
+describe('deprecation', () => {
+	const ran: string[] = [];
+	const shared = scope({
+		flags: { legacy: flag.boolean({ alias: 'l', description: 'Legacy', deprecated: true }) },
+	});
+	const { output, program } = setup({
+		commands: {
+			sync: shared.command({
+				description: 'Sync',
+				deprecated: "Use 'app copy' instead",
+				run: () => void ran.push('sync'),
+			}),
+			copy: shared.command({
+				description: 'Copy',
+				flags: {
+					out: flag.string({ alias: 'o', description: 'Out', deprecated: 'Use --dest instead' }),
+					dest: flag.string({ description: 'Destination' }),
+				},
+				run: () => void ran.push('copy'),
+			}),
+		},
+	});
+	const run = async (argv: string[]) => {
+		output.stderr = '';
+		ran.length = 0;
+		return { code: await program.run(argv), stderr: output.stderr, ran: [...ran] };
+	};
+
+	test('a deprecated command warns, then runs', async () => {
+		expect(await run(['sync'])).toEqual({
+			code: 0,
+			stderr: "warning: 'app sync' is deprecated: Use 'app copy' instead\n",
+			ran: ['sync'],
+		});
+	});
+
+	test('deprecated flags warn only when given, by any name', async () => {
+		expect(await run(['copy', '--dest', 'x'])).toEqual({ code: 0, stderr: '', ran: ['copy'] });
+		expect((await run(['copy', '-o', 'x'])).stderr).toBe(
+			'warning: --out is deprecated: Use --dest instead\n',
+		);
+		expect((await run(['-l', 'copy', '--out=x', '--no-legacy'])).stderr).toBe(
+			'warning: --legacy is deprecated\nwarning: --out is deprecated: Use --dest instead\n',
+		);
+	});
+
+	test('no warnings when the input is invalid', async () => {
+		const result = await run(['copy', '--out']);
+		expect(result.code).toBe(1);
+		expect(result.stderr).not.toContain('warning');
+	});
+
+	test('the error template formats warnings', async () => {
+		class Custom extends ErrorTemplate {
+			override formatWarning(warning: string) {
+				return `[warn] ${warning}`;
+			}
+		}
+		const { output: out, program: custom } = setup({
+			error: new Custom(),
+			commands: { sync: command({ description: 'x', deprecated: true, run: () => {} }) },
+		});
+		await custom.run(['sync']);
+		expect(out.stderr).toBe("[warn] 'app sync' is deprecated\n");
+	});
+
+	test('help lists deprecated commands', () => {
+		expect(program.help()).toContain('sync  Sync (deprecated)');
+	});
+});

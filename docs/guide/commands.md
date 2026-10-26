@@ -23,7 +23,7 @@ const deploy = command({
 
 ## Config
 
-`command({ name?, description, aliases?, hidden?, strict?, flags?, args?, run })`
+`command({ name?, description, aliases?, hidden?, deprecated?, strict?, flags?, args?, run })`
 
 | Option        | Description                                                                                                                       |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -31,6 +31,7 @@ const deploy = command({
 | `name`        | Overrides the name taken from the command's key. A single word.                                                                   |
 | `aliases`     | Other names that route to this command.                                                                                           |
 | `hidden`      | Leave the command out of help listings. It can still be run.                                                                      |
+| `deprecated`  | Still runs, but prints a warning first, and help marks it. A string gives the reason. See [Deprecating](#deprecating).            |
 | `strict`      | Reject unknown flags. Overrides the scope's and the program's setting. See [Passing on unknown flags](#passing-on-unknown-flags). |
 | `flags`       | An object of [flags](./flags). Keys become kebab-case names.                                                                      |
 | `args`        | A tuple of [args](./args).                                                                                                        |
@@ -119,6 +120,64 @@ jinju({ commands: { remove } }); // app rm, app del
 ```
 
 Two commands with the same name or alias at the same level are a `ConfigError`. Commands can't define `help` or `version` flags, which are built in.
+
+## Deprecating
+
+To retire a command or flag without breaking scripts that use it, mark it `deprecated` instead of removing it. It keeps working, but using it prints a warning to stderr before the command runs. A string gives the reason, such as what to use instead:
+
+```ts twoslash
+import { command, flag, jinju } from 'jinju';
+// ---cut---
+const deploy = command({
+	description: 'Deploy the app',
+	flags: {
+		out: flag.string({
+			alias: 'o',
+			description: 'Output directory',
+			deprecated: 'Use --dest instead',
+		}),
+		dest: flag.string({ description: 'Output directory' }),
+	},
+	run: () => {},
+});
+const ship = command({
+	description: 'Deploy the app',
+	deprecated: "Use 'app deploy' instead",
+	run: () => {},
+});
+
+jinju({ name: 'app', commands: { deploy, ship } });
+```
+
+```sh
+$ app ship
+warning: 'app ship' is deprecated: Use 'app deploy' instead
+$ app deploy -o dist
+warning: --out is deprecated: Use --dest instead
+```
+
+A flag only warns when it's given, by any of its names. The warnings don't change the exit code, and there are none when the input is invalid, since the command doesn't run. `deprecated: true` warns without a reason.
+
+Help marks them too:
+
+```sh
+$ app --help
+Usage:
+  app <command>
+
+Commands:
+  deploy  Deploy the app
+  ship    Deploy the app (deprecated)
+…
+$ app deploy --help
+…
+Flags:
+  --dest <string>     Output directory
+  -h, --help          Show help
+  -o, --out <string>  Output directory (deprecated: Use --dest instead)
+```
+
+A deprecated command's own help page shows `Deprecated: <reason>` under its description. To also leave it out of help listings, add `hidden: true`. The [error template](./errors#customising-output) formats the warnings, with `formatWarning`.
 
 ## Sharing flags and args
 

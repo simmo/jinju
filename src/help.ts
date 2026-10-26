@@ -27,6 +27,8 @@ export interface HelpCommand extends HelpPathPart {
 	runnable: boolean;
 	/** Has subcommands of its own. */
 	group: boolean;
+	/** Set when deprecated: `true`, or the reason given. */
+	deprecated?: true | string;
 }
 
 /** Details shared by args and flags. */
@@ -78,6 +80,8 @@ export interface HelpFlag extends HelpParam {
 	/** Defined on the command itself, inherited from a scope, or built in (`--help`, `--version`). */
 	source: 'command' | 'scope' | 'builtin';
 	hidden: boolean;
+	/** Set when deprecated: `true`, or the reason given. */
+	deprecated?: true | string;
 	/** e.g. `-n, --dry-run <string>`; a switch defaulting to `true` shows as `--[no-]name`. */
 	label: string;
 }
@@ -98,6 +102,8 @@ export interface HelpData {
 	description?: string;
 	/** Aliases of this level's command. */
 	aliases: readonly string[];
+	/** Set when this level's command is deprecated: `true`, or the reason given. */
+	deprecated?: true | string;
 	/** Whether this level has a command to run (as opposed to only subcommands). */
 	runnable: boolean;
 	/** Usage lines, e.g. `app <project> deploy [flags] [<env>]` and `app <project> <command>`. */
@@ -147,6 +153,13 @@ const toJson = (value: unknown): string => {
 		return String(value);
 	}
 };
+
+/**
+ * `{ deprecated }` for a `deprecated` option that's set (an empty reason counts as `true`),
+ * so help data only has it then.
+ */
+export const deprecation = (value: boolean | string | undefined): { deprecated?: true | string } =>
+	value === undefined || value === false ? {} : { deprecated: value || true };
 
 /** `<project> deploy`: dynamic segments in angle brackets. */
 export const formatPath = (path: readonly HelpPathPart[]): string =>
@@ -204,7 +217,13 @@ export const helpData = (context: HelpContext): HelpData => {
 					: key in shared || command?.inherited.has(key)
 						? 'scope'
 						: 'command';
-			return { ...flag, source, hidden: param.options.hidden ?? false, label: flagLabel(flag) };
+			return {
+				...flag,
+				source,
+				hidden: param.options.hidden ?? false,
+				...deprecation(param.options.deprecated),
+				label: flagLabel(flag),
+			};
 		},
 	);
 
@@ -223,6 +242,7 @@ export const helpData = (context: HelpContext): HelpData => {
 		path,
 		...(context.description ? { description: context.description } : {}),
 		aliases: command?.config.aliases ?? [],
+		...deprecation(command?.config.deprecated),
 		runnable: command !== undefined,
 		usage,
 		commands: subcommands.map((entry) => ({ ...entry, label: formatPath([entry]) })),
@@ -263,6 +283,7 @@ export class HelpTemplate {
 	sections(data: HelpData): string[] {
 		return [
 			data.description ?? '',
+			this.formatDeprecated(data),
 			this.formatUsage(data),
 			this.formatCommands(data),
 			this.formatArgs(data),
@@ -279,6 +300,12 @@ export class HelpTemplate {
 	flags(data: HelpData): readonly HelpFlag[] {
 		const flags = this.options.showHidden ? data.flags : data.flags.filter((flag) => !flag.hidden);
 		return this.options.sortFlags ? flags.toSorted((a, b) => a.name.localeCompare(b.name)) : flags;
+	}
+
+	/** e.g. `Deprecated: Use 'app deploy' instead.`, when this level's command is deprecated. */
+	formatDeprecated(data: HelpData): string {
+		if (data.deprecated === undefined) return '';
+		return data.deprecated === true ? 'Deprecated.' : `Deprecated: ${data.deprecated}`;
 	}
 
 	formatUsage(data: HelpData): string {
@@ -301,7 +328,8 @@ export class HelpTemplate {
 	}
 
 	formatCommand(command: HelpCommand): HelpRow {
-		return [command.label, command.description];
+		const tag = command.deprecated === undefined ? '' : ' (deprecated)';
+		return [command.label, command.description + tag];
 	}
 
 	formatArg(arg: HelpArg): HelpRow {
@@ -328,6 +356,9 @@ export class HelpTemplate {
 			tags.push(`default: ${shown}`);
 		}
 		if ('env' in param && param.env !== undefined) tags.push(`env: ${param.env}`);
+		if ('deprecated' in param && param.deprecated !== undefined) {
+			tags.push(param.deprecated === true ? 'deprecated' : `deprecated: ${param.deprecated}`);
+		}
 		return tags.length > 0 ? ` (${tags.join('; ')})` : '';
 	}
 

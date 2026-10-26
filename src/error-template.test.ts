@@ -26,6 +26,12 @@ const data = (errors: JinjuError[], words: string[] = ['my-site', 'deploy']): Er
 describe('ErrorTemplate', () => {
 	const errors = [new MissingRequiredError('--token'), new UnknownFlagError('--nope')];
 
+	test('formats warnings', () => {
+		expect(new ErrorTemplate().formatWarning('--old is deprecated')).toBe(
+			'warning: --old is deprecated',
+		);
+	});
+
 	test('lists errors with a hint using the command as typed', () => {
 		expect(new ErrorTemplate().render(data(errors))).toBe(
 			"error: Missing required --token\nerror: Unknown flag '--nope'\n\nRun 'app my-site deploy --help' for usage.\n",

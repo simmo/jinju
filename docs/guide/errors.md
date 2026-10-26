@@ -78,12 +78,13 @@ jinju({ error: new MyErrors({ hint: false }), commands });
 | ------ | ------- | --------------------------------------- |
 | `hint` | `true`  | Add a `Run '… --help' for usage.` line. |
 
-| Method                                     | Default                                                             |
-| ------------------------------------------ | ------------------------------------------------------------------- |
-| `render(data)`                             | Joins `sections(data)` with blank lines and adds a trailing newline |
-| `sections(data)`                           | `[errors, hint]`; the hint is left out with `hint: false`           |
-| `formatErrors(data)`, `formatError(error)` | One `error: <message>` line per error                               |
-| `formatHint(data)`, `formatCommand(data)`  | `Run 'app my-site deploy --help' for usage.`                        |
+| Method                                     | Default                                                                                                            |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `render(data)`                             | Joins `sections(data)` with blank lines and adds a trailing newline                                                |
+| `sections(data)`                           | `[errors, hint]`; the hint is left out with `hint: false`                                                          |
+| `formatErrors(data)`, `formatError(error)` | One `error: <message>` line per error                                                                              |
+| `formatHint(data)`, `formatCommand(data)`  | `Run 'app my-site deploy --help' for usage.`                                                                       |
+| `formatWarning(warning)`                   | `warning: <message>`, for [deprecated](./commands#deprecating) commands and flags. Printed before the command runs |
 
 ## Error data
 

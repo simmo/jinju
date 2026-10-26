@@ -19,6 +19,7 @@ class HelpTemplate {
 	commands(data: HelpData): readonly HelpCommand[];
 	flags(data: HelpData): readonly HelpFlag[];
 
+	formatDeprecated(data: HelpData): string;
 	formatUsage(data: HelpData): string;
 	formatCommands(data: HelpData): string;
 	formatArgs(data: HelpData): string;
@@ -41,11 +42,12 @@ Renders help pages from [`HelpData`](#helpdata). This is the built-in layout: ex
 | Method                                                       | Default                                                                                                                          |
 | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | `render`                                                     | Joins `sections` with blank lines and adds a trailing newline. The result is printed as-is.                                      |
-| `sections`                                                   | `[description, usage, commands, args, flags]`, with empty sections left out                                                      |
+| `sections`                                                   | `[description, deprecated, usage, commands, args, flags]`, with empty sections left out                                          |
+| `formatDeprecated`                                           | `Deprecated: <reason>` (or `Deprecated.`) when this level's command is deprecated, else `''`                                     |
 | `commands`, `flags`                                          | What to list: hidden entries are left out unless `showHidden`; flags are sorted unless `sortFlags: false`                        |
 | `formatUsage`, `formatCommands`, `formatArgs`, `formatFlags` | One section each, or `''` when there's nothing to show                                                                           |
-| `formatCommand`, `formatArg`, `formatFlag`                   | One table row each: `[label, description + tags]`                                                                                |
-| `formatTags`                                                 | e.g. ` (required; default: 3)`. Switch defaults aren't shown                                                                     |
+| `formatCommand`, `formatArg`, `formatFlag`                   | One table row each: `[label, description + tags]`. Deprecated commands get ` (deprecated)`                                       |
+| `formatTags`                                                 | e.g. ` (required; default: 3; deprecated: <reason>)`. Switch defaults aren't shown                                               |
 | `formatValue`                                                | One value, given its type's name (`HelpParam.type`): e.g. `mode=fast` for an entry, JSON for `json`. Arrays are joined with `, ` |
 | `formatPath`                                                 | [`formatPath`](#formatpath)                                                                                                      |
 | `formatTable`                                                | Rows with the left column padded to a common width                                                                               |
@@ -73,6 +75,7 @@ interface HelpData {
 	path: readonly HelpPathPart[];
 	description?: string;
 	aliases: readonly string[];
+	deprecated?: true | string;
 	runnable: boolean;
 	usage: readonly string[];
 	commands: readonly HelpCommand[];
@@ -89,6 +92,7 @@ Everything known about the page being rendered. Nothing is filtered or sorted.
 | `path`        | The command path below the program. Empty at the root.                                  |
 | `description` | This level's description: its command's, or the program's at the root.                  |
 | `aliases`     | Aliases of this level's command.                                                        |
+| `deprecated`  | Set when this level's command is deprecated: `true`, or the reason given.               |
 | `runnable`    | Whether this level has a command to run, as opposed to only subcommands.                |
 | `usage`       | Usage lines, e.g. `app <project> deploy [flags] [<env>]` and `app <project> <command>`. |
 | `commands`    | Subcommands, in definition order.                                                       |
@@ -127,10 +131,11 @@ interface HelpCommand extends HelpPathPart {
 	path: readonly HelpPathPart[];
 	runnable: boolean;
 	group: boolean;
+	deprecated?: true | string;
 }
 ```
 
-A subcommand. `label` is `deploy`, or `<project>` for a dynamic segment. `path` is its full path from the program. `runnable` means it has a command to run, and `group` means it has subcommands.
+A subcommand. `deprecated` is set when it's deprecated: `true`, or the reason given. `label` is `deploy`, or `<project>` for a dynamic segment. `path` is its full path from the program. `runnable` means it has a command to run, and `group` means it has subcommands.
 
 ## `HelpParam`
 
@@ -175,11 +180,12 @@ interface HelpFlag extends HelpParam {
 	env?: string;
 	source: 'command' | 'scope' | 'builtin';
 	hidden: boolean;
+	deprecated?: true | string;
 	label: string;
 }
 ```
 
-A flag. `key` is the key it's defined under (`dryRun`), and `name` is its long name without dashes (`dry-run`). `label` is e.g. `-n, --dry-run <string>`. A switch defaulting to `true` shows as `--[no-]name`.
+A flag. `deprecated` is set when it's deprecated: `true`, or the reason given. `key` is the key it's defined under (`dryRun`), and `name` is its long name without dashes (`dry-run`). `label` is e.g. `-n, --dry-run <string>`. A switch defaulting to `true` shows as `--[no-]name`.
 
 ## `HelpRow`
 
